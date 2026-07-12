@@ -7,6 +7,7 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 export type NodeTelemetryOptions = {
   defaultServiceName: string;
   environment?: NodeJS.ProcessEnv;
+  onError?: (error: unknown) => void;
 };
 
 export interface NodeTelemetry {
@@ -24,17 +25,31 @@ export const startNodeTelemetry = (options: NodeTelemetryOptions): NodeTelemetry
     };
   }
 
-  const sdk = new NodeSDK({
-    serviceName: environment.OTEL_SERVICE_NAME ?? options.defaultServiceName,
-    instrumentations: [getNodeAutoInstrumentations()],
-    metricReaders: [
-      new PeriodicExportingMetricReader({
-        exporter: new OTLPMetricExporter(),
-      }),
-    ],
-    traceExporter: new OTLPTraceExporter(),
-  });
-  sdk.start();
+  let sdk: NodeSDK;
+  try {
+    sdk = new NodeSDK({
+      serviceName: environment.OTEL_SERVICE_NAME ?? options.defaultServiceName,
+      instrumentations: [getNodeAutoInstrumentations()],
+      metricReaders: [
+        new PeriodicExportingMetricReader({
+          exporter: new OTLPMetricExporter(),
+        }),
+      ],
+      traceExporter: new OTLPTraceExporter(),
+    });
+    sdk.start();
+  } catch (error) {
+    try {
+      options.onError?.(error);
+    } catch {
+      // Telemetry diagnostics must not prevent the application from starting.
+    }
+
+    return {
+      enabled: false,
+      shutdown: () => Promise.resolve(),
+    };
+  }
   let shutdownPromise: Promise<void> | undefined;
 
   return {

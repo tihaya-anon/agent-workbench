@@ -1,6 +1,6 @@
+import { telemetry } from "./instrumentation";
 import { serve } from "@hono/node-server";
 import { app } from "./app";
-import { telemetry } from "./instrumentation";
 import { logger } from "./logger";
 
 const port = Number(process.env.PORT ?? 3000);

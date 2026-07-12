@@ -4,13 +4,15 @@
 
 Communicate with the repository owner in Chinese. Write all other content in English, including source code, comments, documentation, commit messages, UI copy, and generated artifacts. Preserve user-provided source material unless explicitly asked to translate it.
 
+Do not manually run formatting or lint commands during development. Formatting is handled by the `PostToolUse` hook and linting is handled by the `Stop` hook. Run only the targeted tests, type checks, and builds needed to verify the current change.
+
 ## Project Structure & Module Organization
 
 This repository is a pnpm workspace containing two applications and three shared packages:
 
 - `apps/web`: Vite + React frontend. UI code lives in `src/`; `vite.config.ts` proxies `/api` requests to the backend.
 - `apps/api`: Hono API for Node.js. Define routes in `src/app.ts` and keep the server entry point in `src/index.ts`.
-- `packages/agent`: LangGraph agent runtime. Keep LangGraph state and graph implementation behind the package's exported runtime interface.
+- `packages/agent`: LangGraph agent runtime. Export native LangGraph graph and node interfaces so callback context, streaming, and runtime configuration remain available to callers.
 - `packages/observability`: Structured logs, trace helpers, and Node.js OpenTelemetry lifecycle. Keep sink and formatter details behind the exported logger interface.
 - `packages/shared`: Zod schemas and TypeScript types shared by both applications. Export public modules through `src/index.ts`.
 - `packages/database`: Drizzle PostgreSQL schema, client factory, and migration configuration.
@@ -42,7 +44,7 @@ Write strict TypeScript with two-space indentation, double quotes, semicolons, a
 
 Prefer arrow functions for ordinary helpers, array callbacks, Promise callbacks, factories, and React function components. Use method shorthand or `function` only when dynamic `this` is required, and use normal methods for classes and constructors.
 
-ESLint and Prettier are configured at the workspace root. Run `pnpm check` before submitting changes.
+ESLint and Prettier are configured at the workspace root and enforced by agent hooks. Do not invoke them manually; use targeted type checks, tests, and builds while developing.
 
 ## Testing Guidelines
 
