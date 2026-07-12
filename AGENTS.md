@@ -47,7 +47,7 @@ There is currently no test runner or coverage requirement. New features should i
 
 ## Commit & Pull Request Guidelines
 
-This directory has no Git history, so no established commit convention exists. Use concise imperative subjects, optionally following Conventional Commits, such as `feat(api): add lesson routes`. Pull requests should explain behavior changes, list verification commands, link relevant issues, and include screenshots for visible UI changes. Keep each pull request limited to one coherent change.
+Use concise imperative commit subjects, optionally following Conventional Commits, such as `feat(api): add lesson routes`. Pull requests should explain behavior changes, list verification commands, link relevant issues, and include screenshots for visible UI changes. Keep each pull request limited to one coherent change.
 
 ## Agent skills
 
