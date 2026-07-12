@@ -21,7 +21,12 @@ export default tseslint.config(
     },
   },
   {
-    files: ["apps/api/**/*.{ts,js}", "packages/database/**/*.{ts,js}", "**/*.config.{js,mjs,ts}"],
+    files: [
+      ".codex/hooks/**/*.{js,mjs}",
+      "apps/api/**/*.{ts,js}",
+      "packages/database/**/*.{ts,js}",
+      "**/*.config.{js,mjs,ts}",
+    ],
     languageOptions: {
       globals: globals.node,
     },
