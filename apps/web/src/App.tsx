@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { MessageSquarePlus, Sparkles } from "lucide-react";
+import { MessageSquarePlus, Moon, Sparkles, Sun } from "lucide-react";
 import type { HealthResponse } from "@teach-everything/shared";
 import { AssistantRuntimeProvider, useAui } from "@assistant-ui/react";
 import { Thread } from "@/components/assistant-ui/thread";
+import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { Button } from "@/components/ui/button";
 import { usePreviewAssistantRuntime } from "@/lib/assistant-runtime";
+import { useTheme } from "@/lib/theme";
 import { api } from "./api";
 
 type ApiState =
@@ -39,6 +41,7 @@ const useApiState = () => {
 const Workspace = () => {
   const apiState = useApiState();
   const aui = useAui();
+  const { theme, toggleTheme } = useTheme();
   const statusLabel =
     apiState.status === "loading"
       ? "Connecting"
@@ -50,7 +53,7 @@ const Workspace = () => {
 
   return (
     <main className="flex h-dvh min-h-140 overflow-hidden bg-background text-foreground">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-white/8 bg-[#202522] text-white lg:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-white/8 bg-[#202522] text-white dark:bg-[#151917] lg:flex">
         <div className="flex h-16 items-center gap-3 border-b border-white/8 px-5">
           <span className="flex size-8 items-center justify-center rounded-md bg-[#d8f26a] text-[#202522]">
             <Sparkles className="size-4" aria-hidden="true" />
@@ -96,16 +99,26 @@ const Workspace = () => {
               <p className="truncate text-xs text-muted-foreground">Preview runtime</p>
             </div>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={startNewConversation}
-            className="lg:hidden"
-            aria-label="Start a new conversation"
-          >
-            <MessageSquarePlus aria-hidden="true" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <TooltipIconButton
+              type="button"
+              tooltip={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              onClick={toggleTheme}
+              className="size-9"
+            >
+              {theme === "dark" ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+            </TooltipIconButton>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={startNewConversation}
+              className="lg:hidden"
+              aria-label="Start a new conversation"
+            >
+              <MessageSquarePlus aria-hidden="true" />
+            </Button>
+          </div>
         </header>
 
         <div className="min-h-0 flex-1">

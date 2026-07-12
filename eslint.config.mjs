@@ -6,7 +6,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import globals from "globals";
 import path from "node:path";
 import tseslint from "typescript-eslint";
-import { defineConfig } from "eslint-define-config";
+import { defineConfig } from "eslint/config";
 
 export default defineConfig(
   {
