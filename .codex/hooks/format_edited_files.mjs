@@ -1,36 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, realpathSync, statSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
+import { findRepositoryRoot, readHookInput, writeHookOutput } from "./hook-runtime.mjs";
 
 const editableFileMarkers = ["Add File", "Update File", "Move to"];
-
-const readStdin = async () => {
-  const chunks = [];
-
-  for await (const chunk of process.stdin) {
-    chunks.push(chunk);
-  }
-
-  return Buffer.concat(chunks).toString("utf8");
-};
-
-const getRepositoryRoot = (cwd) => {
-  let currentDirectory = resolve(cwd);
-
-  while (true) {
-    if (existsSync(join(currentDirectory, ".git"))) {
-      return currentDirectory;
-    }
-
-    const parentDirectory = dirname(currentDirectory);
-
-    if (parentDirectory === currentDirectory) {
-      throw new Error(`Unable to find repository root from: ${cwd}`);
-    }
-
-    currentDirectory = parentDirectory;
-  }
-};
 
 const getEditedPaths = (patch) => {
   const markerPattern = editableFileMarkers.join("|");
@@ -104,18 +77,16 @@ const resolveRepositoryFile = (repositoryRoot, editCwd, candidate) => {
 };
 
 const writeContext = (relativePaths) => {
-  process.stdout.write(
-    JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PostToolUse",
-        additionalContext: `Prettier processed edited files: ${relativePaths.join(", ")}`,
-      },
-    }),
-  );
+  writeHookOutput({
+    hookSpecificOutput: {
+      hookEventName: "PostToolUse",
+      additionalContext: `Prettier processed edited files: ${relativePaths.join(", ")}`,
+    },
+  });
 };
 
 const main = async () => {
-  const input = JSON.parse(await readStdin());
+  const input = await readHookInput();
 
   if (input.hook_event_name !== "PostToolUse" || input.tool_name !== "apply_patch") {
     return;
@@ -132,7 +103,7 @@ const main = async () => {
   }
 
   const editCwd = typeof input.cwd === "string" ? input.cwd : process.cwd();
-  const repositoryRoot = getRepositoryRoot(editCwd);
+  const repositoryRoot = findRepositoryRoot(editCwd);
   const files = [
     ...new Map(
       getEditedPaths(patch)
