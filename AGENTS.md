@@ -6,10 +6,11 @@ Communicate with the repository owner in Chinese. Write all other content in Eng
 
 ## Project Structure & Module Organization
 
-This repository is a pnpm workspace containing two applications and two shared packages:
+This repository is a pnpm workspace containing two applications and three shared packages:
 
 - `apps/web`: Vite + React frontend. UI code lives in `src/`; `vite.config.ts` proxies `/api` requests to the backend.
 - `apps/api`: Hono API for Node.js. Define routes in `src/app.ts` and keep the server entry point in `src/index.ts`.
+- `packages/agent`: LangGraph agent runtime. Keep LangGraph state and graph implementation behind the package's exported runtime interface.
 - `packages/shared`: Zod schemas and TypeScript types shared by both applications. Export public modules through `src/index.ts`.
 - `packages/database`: Drizzle PostgreSQL schema, client factory, and migration configuration.
 
@@ -22,8 +23,11 @@ Use Node.js 22 or newer and pnpm 11.
 ```bash
 pnpm install       # Install all workspace dependencies
 pnpm dev           # Run the web and API development servers in parallel
+pnpm lint          # Lint the workspace with ESLint
+pnpm format:check  # Check formatting with Prettier
 pnpm typecheck     # Type-check every workspace package
 pnpm build         # Build the API and production web assets
+pnpm check         # Run formatting, linting, type checks, and builds
 pnpm clean         # Remove generated workspace outputs
 ```
 
@@ -35,7 +39,7 @@ Database commands are scoped to `@teach-everything/database`, for example `pnpm 
 
 Write strict TypeScript with two-space indentation, double quotes, semicolons, and trailing commas. Use `PascalCase` for React components and exported types, `camelCase` for functions and variables, and descriptive lowercase filenames for schemas. Prefer named exports and `import type` for type-only dependencies. Add shared validation to `packages/shared` rather than duplicating interfaces across apps.
 
-No formatter or linter is configured. Match surrounding code and run `pnpm typecheck` before submitting changes.
+ESLint and Prettier are configured at the workspace root. Run `pnpm check` before submitting changes.
 
 ## Testing Guidelines
 
@@ -44,3 +48,17 @@ There is currently no test runner or coverage requirement. New features should i
 ## Commit & Pull Request Guidelines
 
 This directory has no Git history, so no established commit convention exists. Use concise imperative subjects, optionally following Conventional Commits, such as `feat(api): add lesson routes`. Pull requests should explain behavior changes, list verification commands, link relevant issues, and include screenshots for visible UI changes. Keep each pull request limited to one coherent change.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs are tracked in GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The repository uses the default canonical triage labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Domain documentation uses the single-context layout. See `docs/agents/domain.md`.
