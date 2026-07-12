@@ -34,7 +34,7 @@ pnpm build
 OpenTelemetry is disabled in `.env.example`. Set `OTEL_SDK_DISABLED=false` and configure
 `OTEL_EXPORTER_OTLP_ENDPOINT` to export traces and metrics to an OTLP collector.
 
-TypeScript is pinned to 6.x because the current stable `typescript-eslint` release supports
+TypeScript is pinned to 6.0.x because the current stable `typescript-eslint` release supports
 TypeScript versions below 6.1. Upgrade TypeScript and `typescript-eslint` together.
 
 Database commands read `DATABASE_URL` from the environment:
