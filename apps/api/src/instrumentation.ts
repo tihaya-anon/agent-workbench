@@ -4,8 +4,8 @@ import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 
-function createOpenTelemetrySdk() {
-  return new NodeSDK({
+const createOpenTelemetrySdk = () =>
+  new NodeSDK({
     instrumentations: [getNodeAutoInstrumentations()],
     metricReaders: [
       new PeriodicExportingMetricReader({
@@ -14,7 +14,6 @@ function createOpenTelemetrySdk() {
     ],
     traceExporter: new OTLPTraceExporter(),
   });
-}
 
 const sdk =
   process.env.OTEL_SDK_DISABLED?.toLowerCase() === "false" ? createOpenTelemetrySdk() : undefined;
@@ -23,15 +22,15 @@ sdk?.start();
 
 let shutdownPromise: Promise<void> | undefined;
 
-function shutdown() {
+const shutdown = () => {
   shutdownPromise ??= sdk?.shutdown() ?? Promise.resolve();
   return shutdownPromise;
-}
+};
 
-function reportShutdownError(error: unknown) {
+const reportShutdownError = (error: unknown) => {
   console.error("OpenTelemetry shutdown failed", error);
   process.exitCode = 1;
-}
+};
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {

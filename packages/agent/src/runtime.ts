@@ -21,7 +21,7 @@ const AgentState = Annotation.Root({
   result: Annotation<AgentResult>,
 });
 
-export function createAgentRuntime(model: AgentModel): AgentRuntime {
+export const createAgentRuntime = (model: AgentModel): AgentRuntime => {
   const graph = new StateGraph(AgentState)
     .addNode("generate", async (state) => ({
       result: await model.generate(state.input),
@@ -45,4 +45,4 @@ export function createAgentRuntime(model: AgentModel): AgentRuntime {
       return state.result;
     },
   };
-}
+};

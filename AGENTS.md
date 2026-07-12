@@ -39,6 +39,8 @@ Database commands are scoped to `@teach-everything/database`, for example `pnpm 
 
 Write strict TypeScript with two-space indentation, double quotes, semicolons, and trailing commas. Use `PascalCase` for React components and exported types, `camelCase` for functions and variables, and descriptive lowercase filenames for schemas. Prefer named exports and `import type` for type-only dependencies. Add shared validation to `packages/shared` rather than duplicating interfaces across apps.
 
+Prefer arrow functions for ordinary helpers, array callbacks, Promise callbacks, factories, and React function components. Use method shorthand or `function` only when dynamic `this` is required, and use normal methods for classes and constructors.
+
 ESLint and Prettier are configured at the workspace root. Run `pnpm check` before submitting changes.
 
 ## Testing Guidelines

@@ -5,13 +5,13 @@ import { api } from "./api";
 type ApiState =
   { status: "loading" } | { status: "ready"; data: HealthResponse } | { status: "error" };
 
-export function App() {
+export const App = () => {
   const [apiState, setApiState] = useState<ApiState>({ status: "loading" });
 
   useEffect(() => {
     let active = true;
 
-    async function checkApi() {
+    const checkApi = async () => {
       try {
         const response = await api.api.health.$get();
         if (!response.ok) throw new Error("API request failed");
@@ -20,7 +20,7 @@ export function App() {
       } catch {
         if (active) setApiState({ status: "error" });
       }
-    }
+    };
 
     void checkApi();
     return () => {
@@ -84,4 +84,4 @@ export function App() {
       </section>
     </main>
   );
-}
+};

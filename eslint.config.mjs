@@ -19,6 +19,16 @@ export default tseslint.config(
     linterOptions: {
       reportUnusedDisableDirectives: "error",
     },
+    rules: {
+      "func-style": [
+        "error",
+        "expression",
+        {
+          allowArrowFunctions: true,
+          overrides: { namedExports: "expression" },
+        },
+      ],
+    },
   },
   {
     files: [
