@@ -57,7 +57,7 @@ const AttachmentPreview: FC<AttachmentPreviewProps> = ({ src }) => {
       src={src}
       alt="Attachment preview"
       className={cn(
-        "block h-auto max-h-[80vh] w-auto max-w-full object-contain",
+        "block size-auto max-h-[80vh] max-w-full object-contain",
         isLoaded
           ? "aui-attachment-preview-image-loaded"
           : "aui-attachment-preview-image-loading invisible",
@@ -94,7 +94,7 @@ const AttachmentThumb: FC = () => {
   const src = useAttachmentSrc();
 
   return (
-    <Avatar className="aui-attachment-tile-avatar h-full w-full rounded-none">
+    <Avatar className="aui-attachment-tile-avatar size-full rounded-none">
       <AvatarImage
         src={src}
         alt="Attachment preview"
@@ -198,7 +198,7 @@ const AttachmentRemove: FC = () => {
     <AttachmentPrimitive.Remove asChild>
       <TooltipIconButton
         tooltip="Remove file"
-        className="aui-attachment-tile-remove text-muted-foreground hover:[&_svg]:text-destructive absolute end-1.5 top-1.5 size-3.5 rounded-full bg-white opacity-100 shadow-sm hover:bg-white! [&_svg]:text-black"
+        className="aui-attachment-tile-remove text-muted-foreground hover:[&_svg]:text-destructive absolute inset-e-1.5 top-1.5 size-3.5 rounded-full bg-white opacity-100 shadow-sm hover:bg-white! [&_svg]:text-black"
         side="top"
       >
         <XIcon className="aui-attachment-remove-icon size-3 dark:stroke-[2.5px]" />

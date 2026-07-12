@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { MessageSquarePlus, Sparkles } from "lucide-react";
 import type { HealthResponse } from "@teach-everything/shared";
-import { AssistantRuntimeProvider, useAssistantRuntime } from "@assistant-ui/react";
+import { AssistantRuntimeProvider, useAui } from "@assistant-ui/react";
 import { Thread } from "@/components/assistant-ui/thread";
 import { Button } from "@/components/ui/button";
 import { usePreviewAssistantRuntime } from "@/lib/assistant-runtime";
@@ -38,7 +38,7 @@ const useApiState = () => {
 
 const Workspace = () => {
   const apiState = useApiState();
-  const runtime = useAssistantRuntime();
+  const aui = useAui();
   const statusLabel =
     apiState.status === "loading"
       ? "Connecting"
@@ -46,10 +46,10 @@ const Workspace = () => {
         ? apiState.data.message
         : "API unavailable";
 
-  const startNewConversation = () => runtime.thread.reset();
+  const startNewConversation = () => aui.thread().reset();
 
   return (
-    <main className="flex h-dvh min-h-[560px] overflow-hidden bg-background text-foreground">
+    <main className="flex h-dvh min-h-140 overflow-hidden bg-background text-foreground">
       <aside className="hidden w-64 shrink-0 flex-col border-r border-white/8 bg-[#202522] text-white lg:flex">
         <div className="flex h-16 items-center gap-3 border-b border-white/8 px-5">
           <span className="flex size-8 items-center justify-center rounded-md bg-[#d8f26a] text-[#202522]">
