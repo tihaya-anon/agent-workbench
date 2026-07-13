@@ -2,8 +2,6 @@
 
 ## Agent-Specific Instructions
 
-Communicate with the repository owner in Chinese. Write all other content in English, including source code, comments, documentation, commit messages, UI copy, and generated artifacts. Preserve user-provided source material unless explicitly asked to translate it.
-
 Do not manually run formatting or lint commands during development. Formatting is handled by the `PostToolUse` hook and linting is handled by the `Stop` hook. Run only the targeted tests, type checks, and builds needed to verify the current change.
 
 ## Project Structure & Module Organization
