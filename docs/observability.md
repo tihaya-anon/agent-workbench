@@ -60,8 +60,10 @@ default. Record bounded metadata such as lengths, counts, identifiers, model nam
 | `OTEL_SERVICE_NAME` | OpenTelemetry service name   | Runtime-specific                                 |
 | `OTEL_SDK_DISABLED` | `false` enables trace export | Disabled unless false                            |
 
-The file sink creates parent directories and appends records. Call `flush()` before a process handoff
-and `shutdown()` during process termination.
+The file sink path is relative to the process working directory. The default resolves to
+`apps/api/logs/application.log` when the API is started through `pnpm dev`. The sink creates parent
+directories and appends records. Call `flush()` before a process handoff and `shutdown()` during
+process termination.
 
 ## Trace Naming
 
@@ -99,13 +101,16 @@ LangGraph graph, node, LLM, tool, and retriever runs come from the LangChain cal
 uses run and parent-run identifiers to keep those spans in one trace. Supported HTTP and other client
 libraries may contribute automatic spans when their instrumentation is enabled.
 
-LangChain callbacks observe lifecycle events but do not intercept the node function invocation.
-Consequently, the node span is not the active OpenTelemetry context while a plain node executes.
-Logs and automatically instrumented client calls made directly inside that node usually inherit the
-HTTP request span instead of the node span, although the callback-created node remains visible in the
-same trace. Exact `node -> client/database` parenting and node-span log correlation require executing
-the node through an active-context runnable interceptor rather than adding trace identifiers manually
-to log calls.
+LangChain callbacks observe lifecycle events but do not intercept the node function invocation by
+themselves. `createAgentGraph` therefore wraps each registered node with an active-context
+interceptor. The wrapper resolves the node run from LangGraph's child callback manager and executes
+the node inside the callback-created OpenTelemetry context. Logs and automatically instrumented
+client calls made directly inside that node inherit the node span without manually passing trace
+identifiers.
+
+Nested LLM and tool lifecycle spans are still callback-created observation spans. Unless the
+integration activates its own span while invoking the provider, provider-level HTTP spans inherit the
+active node span rather than the LLM or tool observation span.
 
 The current database adapter uses `postgres.js`. The installed `pg` automatic instrumentation does
 not cover that driver, so database spans are not currently emitted automatically. Add explicit

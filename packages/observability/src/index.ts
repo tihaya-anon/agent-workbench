@@ -11,5 +11,9 @@ export {
   type LogSinkConfig,
 } from "./logger";
 export { createLoggerFromEnv, type EnvironmentLoggerOptions } from "./environment";
-export { createLangChainTelemetryCallback, type LangChainTelemetryOptions } from "./langchain";
+export {
+  createLangChainTelemetryCallback,
+  type LangChainTelemetryCallback,
+  type LangChainTelemetryOptions,
+} from "./langchain";
 export { startNodeTelemetry, type NodeTelemetry, type NodeTelemetryOptions } from "./telemetry";

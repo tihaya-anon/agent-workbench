@@ -17,6 +17,10 @@ export type LangChainTelemetryOptions = {
   onError?: (error: unknown) => void;
 };
 
+export type LangChainTelemetryCallback = BaseCallbackHandler & {
+  runInActiveContext<T>(runId: string | undefined, operation: () => T): T;
+};
+
 type ActiveRun = {
   context: Context;
   metricAttributes?: Attributes;
@@ -171,6 +175,11 @@ class NoopTelemetryCallbackHandler extends BaseCallbackHandler {
 
   constructor() {
     super({ raiseError: false });
+    this.awaitHandlers = true;
+  }
+
+  runInActiveContext<T>(_runId: string | undefined, operation: () => T): T {
+    return operation();
   }
 }
 
@@ -185,6 +194,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
 
   constructor(options: LangChainTelemetryOptions) {
     super({ raiseError: false });
+    this.awaitHandlers = true;
     this.tracer = trace.getTracer(options.instrumentationName, options.instrumentationVersion);
     const meter = metrics.getMeter(options.instrumentationName, options.instrumentationVersion);
     this.runDuration = meter.createHistogram("langchain.run.duration", {
@@ -203,6 +213,51 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
       operation();
     } catch (error) {
       reportError(this.onError, error);
+    }
+  }
+
+  runInActiveContext<T>(runId: string | undefined, operation: () => T): T {
+    const runContext = runId === undefined ? undefined : this.activeRuns.get(runId)?.context;
+    if (runContext === undefined) return operation();
+
+    let invoked = false;
+    let operationFailed = false;
+    let operationError: unknown;
+    let operationResult: T | undefined;
+
+    try {
+      context.with(runContext, () => {
+        if (invoked) {
+          if (operationFailed) throw operationError;
+          return operationResult as T;
+        }
+
+        invoked = true;
+        try {
+          operationResult = operation();
+          return operationResult;
+        } catch (error) {
+          operationFailed = true;
+          operationError = error;
+          throw error;
+        }
+      });
+      if (!invoked) {
+        reportError(this.onError, new Error("OpenTelemetry context manager skipped operation"));
+        return operation();
+      }
+      if (operationFailed) throw operationError;
+
+      return operationResult as T;
+    } catch (error) {
+      if (!invoked) {
+        reportError(this.onError, error);
+        return operation();
+      }
+      if (operationFailed) throw operationError;
+
+      reportError(this.onError, error);
+      return operationResult as T;
     }
   }
 
@@ -409,7 +464,9 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
   }
 }
 
-export const createLangChainTelemetryCallback = (options: LangChainTelemetryOptions) => {
+export const createLangChainTelemetryCallback = (
+  options: LangChainTelemetryOptions,
+): LangChainTelemetryCallback => {
   try {
     return new OpenTelemetryCallbackHandler(options);
   } catch (error) {
