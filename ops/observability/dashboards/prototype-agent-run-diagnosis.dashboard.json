@@ -32,8 +32,8 @@
     },
     {
       "id": 2,
-      "type": "traces",
-      "title": "Agent Run Summary and Trace",
+      "type": "table",
+      "title": "Agent Run Summary",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
       "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
@@ -54,7 +54,7 @@
     },
     {
       "id": 3,
-      "type": "traces",
+      "type": "table",
       "title": "Slow or Failed Operations",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
       "datasource": { "type": "tempo", "uid": "tempo" },
