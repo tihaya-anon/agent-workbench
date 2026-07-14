@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { healthResponseSchema } from "@teach-everything/shared";
 import { logger } from "./logger";
+import { createPrototypeAgentRunDiagnosisApp } from "./prototype-agent-run-diagnosis";
 
 const baseApp = new Hono();
 
@@ -43,5 +44,9 @@ export const app = baseApp.get("/api/health", (c) => {
 
   return c.json(response);
 });
+
+if (process.env.TELEMETRY_HARNESS_ENABLED === "true") {
+  baseApp.route("/", createPrototypeAgentRunDiagnosisApp());
+}
 
 export type AppType = typeof app;

@@ -324,13 +324,12 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
     this.recordDuration(run, "ok");
   }
 
-  private failRun(error: unknown, runId: string) {
+  private failRun(_error: unknown, runId: string) {
     const run = this.activeRuns.get(runId);
     this.activeRuns.delete(runId);
     if (run?.span === undefined) return;
 
     const span = run.span;
-    this.safely(() => span.recordException(error instanceof Error ? error : String(error)));
     this.safely(() => span.setStatus({ code: SpanStatusCode.ERROR }));
     this.safely(() => span.end());
     this.recordDuration(run, "error");

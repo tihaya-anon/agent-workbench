@@ -1,0 +1,25 @@
+# PROTOTYPE: run with `pnpm prototype:agent-run-diagnosis` after the sibling PGL stack is up.
+# Question: can PGL diagnose one metadata-only Agent Run across Tempo and Loki?
+services:
+  teach-everything-api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile.prototype-agent-run-diagnosis
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      TELEMETRY_HARNESS_ENABLED: "true"
+      LOG_SINKS: stdout
+      LOG_STDOUT_FORMAT: json
+      OTEL_SDK_DISABLED: "false"
+      OTEL_SERVICE_NAME: teach-everything-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+    ports:
+      - "127.0.0.1:3001:3000"
+    networks:
+      - observability
+
+networks:
+  observability:
+    external: true

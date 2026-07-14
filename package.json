@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --parallel --filter './apps/*' dev",
+    "prototype:agent-run-diagnosis": "pnpm --filter @teach-everything/api prototype:agent-run-diagnosis",
     "build": "pnpm -r build",
     "test": "vitest run",
     "test:watch": "vitest",

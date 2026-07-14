@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development tsx watch --import ./src/instrumentation.ts src/index.ts",
+    "prototype:agent-run-diagnosis": "docker compose -f ../../ops/observability/prototype-agent-run-diagnosis.compose.yml up --build",
     "build": "tsup",
     "start": "node --import ./dist/instrumentation.js dist/index.js",
     "typecheck": "tsc --noEmit",
@@ -23,6 +24,7 @@
     "@opentelemetry/exporter-trace-otlp-proto": "^0.220.0",
     "@opentelemetry/sdk-metrics": "^2.9.0",
     "@opentelemetry/sdk-node": "^0.220.0",
+    "@teach-everything/agent": "workspace:*",
     "@teach-everything/observability": "workspace:*",
     "@teach-everything/shared": "workspace:*",
     "hono": "^4.12.29"

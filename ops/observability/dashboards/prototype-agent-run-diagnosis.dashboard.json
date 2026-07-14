@@ -1,0 +1,99 @@
+{
+  "uid": "prototype-agent-run-diagnosis",
+  "title": "PROTOTYPE - Agent Run Diagnosis",
+  "description": "Throwaway validation dashboard. Enter an opaque agent_run_id from the harness response.",
+  "tags": ["prototype", "agent-run-diagnosis"],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "",
+  "templating": {
+    "list": [
+      {
+        "name": "agent_run_id",
+        "label": "Agent Run ID",
+        "type": "textbox",
+        "query": "",
+        "current": { "text": "", "value": "" },
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "Selected Agent Run",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "Enter an opaque `agent_run_id`. This prototype shows traces and structured Docker logs only; it intentionally has no aggregate metric, alert, or SLO panels."
+      }
+    },
+    {
+      "id": 2,
+      "type": "traces",
+      "title": "Agent Run Summary and Trace",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "tempo", "uid": "tempo" },
+          "queryType": "traceqlSearch",
+          "query": "{ .agent.run.id = \"$agent_run_id\" }",
+          "limit": 20
+        }
+      ],
+      "options": {
+        "showSearch": true,
+        "showTraceId": true,
+        "showSpanCount": true,
+        "showDuration": true
+      }
+    },
+    {
+      "id": 3,
+      "type": "traces",
+      "title": "Slow or Failed Operations",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "tempo", "uid": "tempo" },
+          "queryType": "traceqlSearch",
+          "query": "{ .agent.run.id = \"$agent_run_id\" && (duration > 1s || status = error) }",
+          "limit": 20
+        }
+      ],
+      "options": {
+        "showSearch": true,
+        "showTraceId": true,
+        "showSpanCount": true,
+        "showDuration": true
+      }
+    },
+    {
+      "id": 4,
+      "type": "logs",
+      "title": "Correlated Agent Run Logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 22 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{service_name=\"teach-everything-api\"} | json | attributes_agent_run_id=\"$agent_run_id\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true
+      }
+    }
+  ]
+}
