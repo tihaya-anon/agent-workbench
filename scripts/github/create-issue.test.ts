@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createIssue } from "./create-issue.ts";
+import { createIssue, parseCreateIssueArguments } from "./create-issue.ts";
 import type { GhApi, GhApiOptions } from "./gh-api.ts";
 
 test("creates an issue and repairs labels omitted by GitHub", async () => {
@@ -92,4 +92,70 @@ test("reports the created issue URL when label repair fails", async () => {
       "Issue created at https://github.com/example/project/issues/42, but label repair failed: permission denied",
     ),
   );
+});
+
+test("creates an issue in an explicitly selected repository", async () => {
+  // Given
+  const directory = await mkdtemp(join(tmpdir(), "teach-everything-gh-test-"));
+  const bodyPath = join(directory, "issue.md");
+  const calls: Array<{ endpoint: string } & GhApiOptions> = [];
+  let issue: { number: number; html_url: string; labels: Array<{ name: string }> } = {
+    number: 7,
+    html_url: "https://github.com/example/platform/issues/7",
+    labels: [],
+  };
+  await writeFile(bodyPath, "Infrastructure issue\n");
+  const api: GhApi = async (endpoint, options = {}) => {
+    calls.push({ endpoint, ...options });
+    if (endpoint.endsWith("/labels")) {
+      issue = { ...issue, labels: [{ name: "ready-for-agent" }] };
+      return issue.labels;
+    }
+    return issue;
+  };
+
+  // When
+  const url = await createIssue(
+    {
+      repository: "example/platform",
+      title: "Provision Tempo",
+      bodyFile: bodyPath,
+      labels: ["ready-for-agent"],
+    },
+    api,
+  );
+
+  // Then
+  assert.equal(url, "https://github.com/example/platform/issues/7");
+  assert.deepEqual(
+    calls.map(({ endpoint }) => endpoint),
+    [
+      "repos/example/platform/issues",
+      "repos/example/platform/issues/7/labels",
+      "repos/example/platform/issues/7",
+    ],
+  );
+});
+
+test("parses an explicitly selected issue repository", () => {
+  // Given
+  const arguments_ = [
+    "--repo",
+    "example/platform",
+    "--title",
+    "Provision Tempo",
+    "--body-file",
+    "issue.md",
+  ];
+
+  // When
+  const options = parseCreateIssueArguments(arguments_);
+
+  // Then
+  assert.deepEqual(options, {
+    repository: "example/platform",
+    title: "Provision Tempo",
+    bodyFile: "issue.md",
+    labels: [],
+  });
 });

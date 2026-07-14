@@ -13,6 +13,17 @@ export type GhApiOptions = {
 
 export type GhApi = (endpoint: string, options?: GhApiOptions) => Promise<unknown>;
 
+export const parseRepository = (value: string) => {
+  if (!/^[^/\s]+\/[^/\s]+$/.test(value)) {
+    throw new Error("--repo must use the owner/repo format");
+  }
+
+  return value;
+};
+
+export const repositoryEndpoint = (repository: string | undefined, path: string) =>
+  `repos/${repository === undefined ? "{owner}/{repo}" : parseRepository(repository)}${path}`;
+
 export class GhApiError extends Error {
   readonly statusCode: number | undefined;
 

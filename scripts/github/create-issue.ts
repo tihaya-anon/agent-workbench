@@ -2,20 +2,22 @@
 
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { ghApi, type GhApi } from "./gh-api.ts";
+import { ghApi, parseRepository, repositoryEndpoint, type GhApi } from "./gh-api.ts";
 
 const usage = `Usage:
-  pnpm github:issue:create -- --title <title> --body-file <path> [--label <name> ...]`;
+  pnpm github:issue:create -- [--repo <owner/repo>] --title <title> --body-file <path> [--label <name> ...]`;
 
 type CreateIssueOptions = {
   title: string;
   bodyFile: string;
   labels: string[];
+  repository?: string;
 };
 
-const parseArguments = (args: string[]): CreateIssueOptions | { help: true } => {
+export const parseCreateIssueArguments = (args: string[]): CreateIssueOptions | { help: true } => {
   let title: string | undefined;
   let bodyFile: string | undefined;
+  let repository: string | undefined;
   const labels: string[] = [];
 
   for (let index = 0; index < args.length; index += 1) {
@@ -31,6 +33,7 @@ const parseArguments = (args: string[]): CreateIssueOptions | { help: true } => 
     if (argument === "--title") title = value;
     else if (argument === "--body-file") bodyFile = value;
     else if (argument === "--label") labels.push(value);
+    else if (argument === "--repo") repository = parseRepository(value);
     else throw new Error(`Unknown argument: ${argument}`);
 
     index += 1;
@@ -38,8 +41,12 @@ const parseArguments = (args: string[]): CreateIssueOptions | { help: true } => 
 
   if (title === undefined || title.trim() === "") throw new Error("--title is required");
   if (bodyFile === undefined) throw new Error("--body-file is required");
-
-  return { title, bodyFile, labels };
+  return {
+    title,
+    bodyFile,
+    labels,
+    ...(repository === undefined ? {} : { repository }),
+  };
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -67,7 +74,8 @@ const getIssueIdentity = (issue: unknown) => {
 
 export const createIssue = async (options: CreateIssueOptions, api: GhApi = ghApi) => {
   const body = await readFile(options.bodyFile, "utf8");
-  let issue = await api("repos/{owner}/{repo}/issues", {
+  const endpoint = (path: string) => repositoryEndpoint(options.repository, path);
+  let issue = await api(endpoint("/issues"), {
     method: "POST",
     body: {
       title: options.title,
@@ -80,11 +88,11 @@ export const createIssue = async (options: CreateIssueOptions, api: GhApi = ghAp
   try {
     const missingLabels = options.labels.filter((label) => !getLabelNames(issue).includes(label));
     if (missingLabels.length > 0) {
-      await api(`repos/{owner}/{repo}/issues/${identity.number}/labels`, {
+      await api(endpoint(`/issues/${identity.number}/labels`), {
         method: "POST",
         body: { labels: missingLabels },
       });
-      issue = await api(`repos/{owner}/{repo}/issues/${identity.number}`, { method: "GET" });
+      issue = await api(endpoint(`/issues/${identity.number}`), { method: "GET" });
     }
 
     const finalLabels = getLabelNames(issue);
@@ -103,7 +111,7 @@ export const createIssue = async (options: CreateIssueOptions, api: GhApi = ghAp
 };
 
 const run = async () => {
-  const options = parseArguments(process.argv.slice(2));
+  const options = parseCreateIssueArguments(process.argv.slice(2));
   if ("help" in options) {
     process.stdout.write(`${usage}\n`);
     return;

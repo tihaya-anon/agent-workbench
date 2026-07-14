@@ -15,8 +15,13 @@ and other issue updates.
   `pnpm github:label:ensure -- --name <name> --color <RRGGBB> --description <text>`.
   The script creates a missing label or updates an existing label to match, then verifies its
   name, color, and description. The color must omit the leading `#`.
+- For an issue or label owned by a sibling repository, run the same scripts from this repository
+  with `--repo <owner/repo>`, for example
+  `pnpm github:issue:create -- --repo example/platform --title <title> --body-file <path>`.
+  Do not bypass the scripts with direct `gh issue create` or label mutation commands.
 - Read, update, comment on, and close issues using `gh issue`.
-- Infer the repository from `git remote -v`.
+- Infer the default repository from `git remote -v`; use `--repo` when the owning repository is not
+  the current checkout.
 - When a skill says "publish to the issue tracker", write the issue body to a temporary
   Markdown file and invoke `github:issue:create`. Remove the temporary file after verification.
 - When a skill says "fetch the relevant ticket", run `gh issue view <number> --comments`.
