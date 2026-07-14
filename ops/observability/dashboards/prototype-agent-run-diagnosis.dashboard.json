@@ -35,12 +35,12 @@
       "type": "table",
       "title": "Agent Run Summary",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
-      "datasource": { "type": "tempo", "uid": "tempo" },
+      "datasource": { "type": "tempo", "uid": "tempo-agent-run-diagnosis" },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "tempo", "uid": "tempo" },
-          "queryType": "traceqlSearch",
+          "datasource": { "type": "tempo", "uid": "tempo-agent-run-diagnosis" },
+          "queryType": "traceql",
           "query": "{ .agent.run.id = \"$agent_run_id\" }",
           "limit": 20
         }
@@ -57,12 +57,12 @@
       "type": "table",
       "title": "Slow or Failed Operations",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
-      "datasource": { "type": "tempo", "uid": "tempo" },
+      "datasource": { "type": "tempo", "uid": "tempo-agent-run-diagnosis" },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "tempo", "uid": "tempo" },
-          "queryType": "traceqlSearch",
+          "datasource": { "type": "tempo", "uid": "tempo-agent-run-diagnosis" },
+          "queryType": "traceql",
           "query": "{ .agent.run.id = \"$agent_run_id\" && (duration > 1s || status = error) }",
           "limit": 20
         }
