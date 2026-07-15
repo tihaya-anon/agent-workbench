@@ -1,12 +1,202 @@
 import { AgentRunExecutionError, type AgentRunExecutor } from "@teach-everything/agent";
 import {
+  context,
+  metrics,
+  SpanStatusCode,
+  trace,
+  type Meter,
+  type MeterProvider as ApiMeterProvider,
+} from "@opentelemetry/api";
+import {
+  AggregationTemporality,
+  InMemoryMetricExporter,
+  MeterProvider,
+  PeriodicExportingMetricReader,
+} from "@opentelemetry/sdk-metrics";
+import { node as traceNode } from "@opentelemetry/sdk-node";
+import type { Logger, LogAttributes, LogContext } from "@teach-everything/observability";
+import {
   agentRunEventLineSchema,
   agentRunRequestSchema,
   healthResponseSchema,
+  type AgentRunErrorClassification,
   type AgentRunExecutorEvent,
 } from "@teach-everything/shared";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { app, createApp } from "./app";
+
+type CapturedLogRecord = {
+  body: string;
+  attributes: LogAttributes;
+  eventName?: string;
+  traceId?: string;
+  spanId?: string;
+  traceFlags?: number;
+};
+
+const createCapturingLogger = (
+  records: CapturedLogRecord[],
+  boundAttributes: LogAttributes = {},
+): Logger => {
+  const write = (body: string, logContext: LogContext = {}) => {
+    const spanContext = trace.getActiveSpan()?.spanContext();
+
+    records.push({
+      body,
+      attributes: {
+        ...boundAttributes,
+        ...logContext.attributes,
+      },
+      ...(logContext.eventName === undefined ? {} : { eventName: logContext.eventName }),
+      ...(spanContext === undefined
+        ? {}
+        : {
+            traceId: spanContext.traceId,
+            spanId: spanContext.spanId,
+            traceFlags: spanContext.traceFlags,
+          }),
+    });
+  };
+
+  return {
+    trace: write,
+    debug: write,
+    info: write,
+    warn: write,
+    error: write,
+    fatal: write,
+    child: (attributes) => createCapturingLogger(records, { ...boundAttributes, ...attributes }),
+    flush: () => Promise.resolve(),
+    shutdown: () => Promise.resolve(),
+  };
+};
+
+const installTelemetryExporters = () => {
+  const { InMemorySpanExporter, NodeTracerProvider, SimpleSpanProcessor } = traceNode;
+  const spanExporter = new InMemorySpanExporter();
+  const tracerProvider = new NodeTracerProvider({
+    spanProcessors: [new SimpleSpanProcessor(spanExporter)],
+  });
+  tracerProvider.register();
+
+  const metricExporter = new InMemoryMetricExporter(AggregationTemporality.CUMULATIVE);
+  const metricReader = new PeriodicExportingMetricReader({
+    exporter: metricExporter,
+    exportIntervalMillis: 60_000,
+  });
+  const meterProvider = new MeterProvider({ readers: [metricReader] });
+  metrics.setGlobalMeterProvider(meterProvider);
+
+  return {
+    collectMetrics: async () => {
+      await metricReader.forceFlush();
+      return metricExporter.getMetrics();
+    },
+    getSpans: () => spanExporter.getFinishedSpans(),
+    shutdown: async () => {
+      await tracerProvider.shutdown();
+      await meterProvider.shutdown();
+    },
+  };
+};
+
+const installThrowingSpanExporter = () => {
+  const { NodeTracerProvider, SimpleSpanProcessor } = traceNode;
+  const tracerProvider = new NodeTracerProvider({
+    spanProcessors: [
+      new SimpleSpanProcessor({
+        export: () => {
+          throw new Error("SENTINEL_TRACE_EXPORTER_FAILURE");
+        },
+        shutdown: () => Promise.resolve(),
+      }),
+    ],
+  });
+  tracerProvider.register();
+
+  return {
+    shutdown: () => tracerProvider.shutdown(),
+  };
+};
+
+const serializeTelemetryPayload = (
+  logs: CapturedLogRecord[],
+  metrics: Awaited<ReturnType<ReturnType<typeof installTelemetryExporters>["collectMetrics"]>>,
+  spans: ReturnType<ReturnType<typeof installTelemetryExporters>["getSpans"]>,
+) =>
+  JSON.stringify({
+    logs,
+    metrics,
+    spans: spans.map((span) => ({
+      attributes: span.attributes,
+      events: span.events,
+      name: span.name,
+      status: span.status,
+    })),
+  });
+
+const findAgentRunDurationMetric = (
+  metrics: Awaited<ReturnType<ReturnType<typeof installTelemetryExporters>["collectMetrics"]>>,
+) =>
+  metrics
+    .flatMap((resourceMetrics) => resourceMetrics.scopeMetrics)
+    .flatMap((scopeMetrics) => scopeMetrics.metrics)
+    .find((metric) => metric.descriptor.name === "agent.run.duration");
+
+const failureWithSentinels = (errorClassification: AgentRunErrorClassification) => {
+  const error =
+    errorClassification === "internal"
+      ? new Error("SENTINEL_EXCEPTION_MESSAGE")
+      : new AgentRunExecutionError(errorClassification, {
+          cause: new Error("SENTINEL_EXCEPTION_CAUSE"),
+        });
+  error.stack = "SENTINEL_STACK_TRACE";
+  return error;
+};
+
+const throwingLogger: Logger = {
+  trace: () => {
+    throw new Error("SENTINEL_LOG_SINK_FAILURE");
+  },
+  debug: () => {
+    throw new Error("SENTINEL_LOG_SINK_FAILURE");
+  },
+  info: () => {
+    throw new Error("SENTINEL_LOG_SINK_FAILURE");
+  },
+  warn: () => {
+    throw new Error("SENTINEL_LOG_SINK_FAILURE");
+  },
+  error: () => {
+    throw new Error("SENTINEL_LOG_SINK_FAILURE");
+  },
+  fatal: () => {
+    throw new Error("SENTINEL_LOG_SINK_FAILURE");
+  },
+  child: () => {
+    throw new Error("SENTINEL_LOG_SINK_FAILURE");
+  },
+  flush: () => Promise.resolve(),
+  shutdown: () => Promise.resolve(),
+};
+
+const installThrowingMeterProvider = () => {
+  const throwingMeter = {
+    createHistogram: () => {
+      throw new Error("SENTINEL_METER_FAILURE");
+    },
+  } as unknown as Meter;
+
+  metrics.setGlobalMeterProvider({
+    getMeter: () => throwingMeter,
+  } satisfies ApiMeterProvider);
+};
+
+afterEach(() => {
+  context.disable();
+  metrics.disable();
+  trace.disable();
+});
 
 const decodeAgentRunEvents = (body: string) =>
   body
@@ -23,6 +213,13 @@ const rejectedAgentRunExecutor = (error: unknown): AgentRunExecutor => ({
       next: () => Promise.reject<IteratorResult<AgentRunExecutorEvent>>(error),
     }),
   }),
+});
+
+const failedAfterModelContentExecutor = (error: unknown): AgentRunExecutor => ({
+  async *execute() {
+    yield { version: 1, type: "message.delta", text: "SENTINEL_MODEL_CONTENT" };
+    throw error;
+  },
 });
 
 const emptyAsyncIterable = (): AsyncIterable<unknown> => ({
@@ -84,6 +281,248 @@ describe("POST /api/agent-runs", () => {
       { version: 1, type: "run.completed" },
     ]);
   });
+
+  it("emits metadata-only root telemetry for a successful Agent Run", async () => {
+    // Given
+    const telemetry = installTelemetryExporters();
+    const logs: CapturedLogRecord[] = [];
+    const api = createApp({
+      agentRunExecutor: {
+        async *execute() {
+          yield { version: 1, type: "message.delta", text: "SENTINEL_MODEL_CONTENT" };
+          yield { version: 1, type: "run.completed" };
+        },
+      },
+      createAgentRunId: () => "ar_success_telemetry",
+      logger: createCapturingLogger(logs),
+    });
+    const request = new Request("http://localhost/api/agent-runs", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer SENTINEL_AUTHORIZATION",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: "SENTINEL_USER_CONTENT" }),
+    });
+
+    // When
+    const response = await api.request(request);
+    const body = await response.text();
+    const metrics = await telemetry.collectMetrics();
+    const spans = telemetry.getSpans();
+    await telemetry.shutdown();
+
+    // Then
+    expect(response.status).toBe(200);
+    expect(decodeAgentRunEvents(body)).toEqual([
+      { version: 1, type: "run.started", agentRunId: "ar_success_telemetry" },
+      { version: 1, type: "message.delta", text: "SENTINEL_MODEL_CONTENT" },
+      { version: 1, type: "run.completed" },
+    ]);
+
+    const rootSpan = spans.find((span) => span.name === "agent.run");
+    expect(rootSpan).toBeDefined();
+    expect(rootSpan?.attributes).toMatchObject({
+      "agent.run.id": "ar_success_telemetry",
+      "agent.run.outcome": "succeeded",
+    });
+    expect(rootSpan?.status.code).toBe(SpanStatusCode.UNSET);
+    expect(rootSpan?.events).toEqual([]);
+
+    const runLogs = logs.filter(
+      (record) => record.attributes["agent.run.id"] === "ar_success_telemetry",
+    );
+    expect(runLogs.map((record) => record.eventName)).toEqual([
+      "agent.run.accepted",
+      "agent.run.completed",
+    ]);
+    expect(runLogs.every((record) => record.traceId === rootSpan?.spanContext().traceId)).toBe(
+      true,
+    );
+    expect(runLogs.map((record) => record.attributes)).toEqual([
+      { "agent.run.id": "ar_success_telemetry" },
+      { "agent.run.id": "ar_success_telemetry", "agent.run.outcome": "succeeded" },
+    ]);
+
+    const durationMetric = findAgentRunDurationMetric(metrics);
+    expect(durationMetric?.dataPoints).toHaveLength(1);
+    expect(durationMetric?.dataPoints[0]?.attributes).toEqual({
+      "agent.run.outcome": "succeeded",
+    });
+
+    const telemetryPayload = serializeTelemetryPayload(logs, metrics, spans);
+    for (const prohibited of [
+      "SENTINEL_USER_CONTENT",
+      "SENTINEL_MODEL_CONTENT",
+      "SENTINEL_AUTHORIZATION",
+    ]) {
+      expect(telemetryPayload).not.toContain(prohibited);
+    }
+  });
+
+  it("parents the root Agent Run span beneath active server telemetry", async () => {
+    // Given
+    const telemetry = installTelemetryExporters();
+    const logs: CapturedLogRecord[] = [];
+    const api = createApp({
+      agentRunExecutor: {
+        async *execute() {
+          yield { version: 1, type: "run.completed" };
+        },
+      },
+      createAgentRunId: () => "ar_parented_telemetry",
+      logger: createCapturingLogger(logs),
+    });
+    const request = new Request("http://localhost/api/agent-runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Run under a server span." }),
+    });
+    const tracer = trace.getTracer("test-http-server");
+
+    // When
+    await tracer.startActiveSpan("HTTP POST /api/agent-runs", async (serverSpan) => {
+      const response = await api.request(request);
+      await response.text();
+      serverSpan.end();
+    });
+    const spans = telemetry.getSpans();
+    await telemetry.shutdown();
+
+    // Then
+    const rootSpan = spans.find((span) => span.name === "agent.run");
+    const serverSpan = spans.find((span) => span.name === "HTTP POST /api/agent-runs");
+    expect(rootSpan?.parentSpanContext?.spanId).toBe(serverSpan?.spanContext().spanId);
+  });
+
+  it("keeps the Agent Run stream outcome when telemetry sinks fail", async () => {
+    // Given
+    const traceTelemetry = installThrowingSpanExporter();
+    installThrowingMeterProvider();
+    const api = createApp({
+      agentRunExecutor: {
+        async *execute() {
+          yield { version: 1, type: "message.delta", text: "Streamed answer." };
+          yield { version: 1, type: "run.completed" };
+        },
+      },
+      createAgentRunId: () => "ar_fail_open_telemetry",
+      logger: throwingLogger,
+    });
+    const request = new Request("http://localhost/api/agent-runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Telemetry must be fail-open." }),
+    });
+
+    // When
+    const response = await api.request(request);
+    const body = await response.text();
+    await traceTelemetry.shutdown();
+
+    // Then
+    expect(response.status).toBe(200);
+    expect(decodeAgentRunEvents(body)).toEqual([
+      { version: 1, type: "run.started", agentRunId: "ar_fail_open_telemetry" },
+      { version: 1, type: "message.delta", text: "Streamed answer." },
+      { version: 1, type: "run.completed" },
+    ]);
+  });
+
+  it.each([
+    "validation",
+    "provider",
+    "tool",
+    "timeout",
+    "cancellation_failed",
+    "internal",
+  ] as const)(
+    "emits metadata-only root telemetry for a %s Agent Run failure",
+    async (errorClassification) => {
+      // Given
+      const telemetry = installTelemetryExporters();
+      const logs: CapturedLogRecord[] = [];
+      const api = createApp({
+        agentRunExecutor: failedAfterModelContentExecutor(
+          failureWithSentinels(errorClassification),
+        ),
+        createAgentRunId: () => "ar_failure_telemetry",
+        logger: createCapturingLogger(logs),
+      });
+      const request = new Request("http://localhost/api/agent-runs", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer SENTINEL_AUTHORIZATION",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: "SENTINEL_USER_CONTENT" }),
+      });
+
+      // When
+      const response = await api.request(request);
+      const body = await response.text();
+      const metrics = await telemetry.collectMetrics();
+      const spans = telemetry.getSpans();
+      await telemetry.shutdown();
+
+      // Then
+      expect(response.status).toBe(200);
+      expect(decodeAgentRunEvents(body)).toEqual([
+        { version: 1, type: "run.started", agentRunId: "ar_failure_telemetry" },
+        { version: 1, type: "message.delta", text: "SENTINEL_MODEL_CONTENT" },
+        { version: 1, type: "run.failed", errorClassification },
+      ]);
+
+      const rootSpan = spans.find((span) => span.name === "agent.run");
+      expect(rootSpan).toBeDefined();
+      expect(rootSpan?.attributes).toMatchObject({
+        "agent.run.id": "ar_failure_telemetry",
+        "agent.run.outcome": "failed",
+        "error.type": errorClassification,
+      });
+      expect(rootSpan?.status.code).toBe(SpanStatusCode.ERROR);
+      expect(rootSpan?.events).toEqual([]);
+
+      const runLogs = logs.filter(
+        (record) => record.attributes["agent.run.id"] === "ar_failure_telemetry",
+      );
+      expect(runLogs.map((record) => record.eventName)).toEqual([
+        "agent.run.accepted",
+        "agent.run.failed",
+      ]);
+      expect(runLogs.every((record) => record.traceId === rootSpan?.spanContext().traceId)).toBe(
+        true,
+      );
+      expect(runLogs.map((record) => record.attributes)).toEqual([
+        { "agent.run.id": "ar_failure_telemetry" },
+        {
+          "agent.run.id": "ar_failure_telemetry",
+          "agent.run.outcome": "failed",
+          "error.type": errorClassification,
+        },
+      ]);
+
+      const durationMetric = findAgentRunDurationMetric(metrics);
+      expect(durationMetric?.dataPoints).toHaveLength(1);
+      expect(durationMetric?.dataPoints[0]?.attributes).toEqual({
+        "agent.run.outcome": "failed",
+        "error.type": errorClassification,
+      });
+
+      const telemetryPayload = serializeTelemetryPayload(logs, metrics, spans);
+      for (const prohibited of [
+        "SENTINEL_AUTHORIZATION",
+        "SENTINEL_EXCEPTION_CAUSE",
+        "SENTINEL_EXCEPTION_MESSAGE",
+        "SENTINEL_MODEL_CONTENT",
+        "SENTINEL_STACK_TRACE",
+        "SENTINEL_USER_CONTENT",
+      ]) {
+        expect(telemetryPayload).not.toContain(prohibited);
+      }
+      expect(JSON.stringify(durationMetric?.dataPoints)).not.toContain("ar_failure_telemetry");
+    },
+  );
 
   it.each(["{", JSON.stringify({ message: " \n " })])(
     "rejects invalid input before creating an Agent Run: %j",

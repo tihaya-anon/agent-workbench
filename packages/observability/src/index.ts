@@ -12,6 +12,16 @@ export {
 } from "./logger";
 export { createLoggerFromEnv, type EnvironmentLoggerOptions } from "./environment";
 export {
+  createAgentRunTelemetry,
+  runDiagnosticTelemetrySafely,
+  type AgentRunErrorClassification,
+  type AgentRunOutcome,
+  type AgentRunTelemetry,
+  type AgentRunTelemetryOptions,
+  type AgentRunTelemetryScope,
+  type AgentRunTerminalOutcome,
+} from "./agent-run";
+export {
   createLangChainTelemetryCallback,
   type LangChainTelemetryCallback,
   type LangChainTelemetryOptions,
