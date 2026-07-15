@@ -5,7 +5,7 @@ import { AssistantRuntimeProvider, useAui } from "@assistant-ui/react";
 import { Thread } from "@/components/assistant-ui/thread";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { Button } from "@/components/ui/button";
-import { usePreviewAssistantRuntime } from "@/lib/assistant-runtime";
+import { useAgentRunAssistantRuntime } from "@/lib/assistant-runtime";
 import { useTheme } from "@/lib/theme";
 import { api } from "./api";
 
@@ -96,7 +96,7 @@ const Workspace = () => {
             <Sparkles className="size-5 text-primary lg:hidden" aria-hidden="true" />
             <div className="min-w-0">
               <h1 className="truncate text-sm font-semibold">Learning assistant</h1>
-              <p className="truncate text-xs text-muted-foreground">Preview runtime</p>
+              <p className="truncate text-xs text-muted-foreground">Agent Run v1</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -130,7 +130,7 @@ const Workspace = () => {
 };
 
 export const App = () => {
-  const runtime = usePreviewAssistantRuntime();
+  const runtime = useAgentRunAssistantRuntime();
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

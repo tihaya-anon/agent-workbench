@@ -1,6 +1,10 @@
-import { useLocalRuntime, type ChatModelAdapter, type ThreadMessage } from "@assistant-ui/react";
-
-const RESPONSE_DELAY_MS = 45;
+import { agentRunEventLineSchema, type AgentRunEvent } from "@teach-everything/shared";
+import {
+  useLocalRuntime,
+  type ChatModelAdapter,
+  type ChatModelRunResult,
+  type ThreadMessage,
+} from "@assistant-ui/react";
 
 const getLatestUserText = (messages: readonly ThreadMessage[]) => {
   let userMessage: ThreadMessage | undefined;
@@ -21,100 +25,95 @@ const getLatestUserText = (messages: readonly ThreadMessage[]) => {
   );
 };
 
-const waitForNextChunk = async (abortSignal: AbortSignal) => {
-  if (abortSignal.aborted) return;
+const readAgentRunEvents = async function* (body: ReadableStream<Uint8Array>) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let pending = "";
 
-  await new Promise<void>((resolve) => {
-    const handleAbort = () => {
-      window.clearTimeout(timeout);
-      resolve();
-    };
-    const timeout = window.setTimeout(() => {
-      abortSignal.removeEventListener("abort", handleAbort);
-      resolve();
-    }, RESPONSE_DELAY_MS);
+  while (true) {
+    const { done, value } = await reader.read();
+    pending += decoder.decode(value, { stream: !done });
 
-    abortSignal.addEventListener("abort", handleAbort, { once: true });
-  });
-};
-
-const createResponse = (prompt: string) => {
-  const normalizedPrompt = prompt.toLowerCase();
-
-  if (normalizedPrompt.includes("stack")) {
-    return [
-      "This frontend now uses **assistant-ui** for the conversation runtime and primitives, ",
-      "**Tailwind CSS v4** for styling, and **shadcn/ui** as the source-owned component convention.\n\n",
-      "The adapter is deliberately repository-owned, so the Hono and LangGraph boundary can evolve independently.",
-    ];
-  }
-
-  if (normalizedPrompt.includes("runtime")) {
-    return [
-      "The UI talks to a small `ChatModelAdapter` owned by this repository. ",
-      "Today it streams this preview response locally; later the same adapter can call a Hono route ",
-      "without changing the thread, messages, composer, cancellation, or Markdown rendering.",
-    ];
-  }
-
-  return [
-    `You asked: **${prompt}**\n\n`,
-    "The assistant surface is ready for a real teaching workflow. ",
-    "The next integration point is the application-owned Hono endpoint that will invoke the LangGraph runtime and stream its events.",
-  ];
-};
-
-const previewModel: ChatModelAdapter = {
-  async *run({ messages, abortSignal }) {
-    const prompt = getLatestUserText(messages).trim();
-
-    if (prompt.toLowerCase().includes("error")) {
-      throw new Error("Preview error requested. The thread error state is working.");
+    let delimiter = pending.indexOf("\n");
+    while (delimiter >= 0) {
+      const line = pending.slice(0, delimiter);
+      pending = pending.slice(delimiter + 1);
+      yield agentRunEventLineSchema.parse(`${line}\n`);
+      delimiter = pending.indexOf("\n");
     }
 
-    const toolCall = {
-      type: "tool-call" as const,
-      toolCallId: crypto.randomUUID(),
-      toolName: "inspectWorkspace",
-      args: { scope: "apps/web" },
-      argsText: '{"scope":"apps/web"}',
-    };
+    if (done) break;
+  }
 
-    yield { content: [toolCall] };
-    await waitForNextChunk(abortSignal);
-    if (abortSignal.aborted) return;
+  if (pending.length > 0) {
+    yield agentRunEventLineSchema.parse(pending);
+  }
+};
 
-    const completedToolCall = {
-      ...toolCall,
-      result: {
-        framework: "Vite + React",
-        runtime: "assistant-ui LocalRuntime",
-        styling: "Tailwind CSS + shadcn/ui",
-      },
-    };
-    const chunks = createResponse(prompt);
+const getAgentRunId = (event: AgentRunEvent, responseAgentRunId: string) => {
+  if (event.type !== "run.started" || event.agentRunId !== responseAgentRunId) {
+    throw new Error("Agent Run stream did not start with the response identifier");
+  }
+
+  return event.agentRunId;
+};
+
+export const createAgentRunModel = (fetcher: typeof fetch = fetch): ChatModelAdapter => ({
+  async *run({ messages, abortSignal }): AsyncGenerator<ChatModelRunResult, void> {
+    const response = await fetcher("/api/agent-runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: getLatestUserText(messages).trim() }),
+      signal: abortSignal,
+    });
+
+    if (!response.ok) {
+      throw new Error("Agent Run request failed");
+    }
+
+    const responseAgentRunId = response.headers.get("X-Agent-Run-Id");
+    if (!responseAgentRunId || !response.body) {
+      throw new Error("Agent Run response is missing its stream identifier or body");
+    }
+
+    let agentRunId: string | undefined;
     let text = "";
 
-    for (const chunk of chunks) {
-      text += chunk;
-      yield {
-        content: [completedToolCall, { type: "text", text }],
-      };
-      await waitForNextChunk(abortSignal);
-      if (abortSignal.aborted) return;
+    for await (const event of readAgentRunEvents(response.body)) {
+      agentRunId ??= getAgentRunId(event, responseAgentRunId);
+
+      if (event.type === "message.delta") {
+        text += event.text;
+        yield { content: [{ type: "text", text }], metadata: { custom: { agentRunId } } };
+      }
+
+      if (event.type === "run.completed") {
+        yield {
+          content: [{ type: "text", text }],
+          metadata: { custom: { agentRunId } },
+          status: { type: "complete", reason: "stop" },
+        };
+        return;
+      }
+
+      if (event.type === "run.failed" || event.type === "run.cancelled") {
+        throw new Error("Agent Run did not complete successfully");
+      }
     }
   },
-};
+});
 
-export const usePreviewAssistantRuntime = () =>
-  useLocalRuntime(previewModel, {
+const agentRunModel = createAgentRunModel();
+
+export const useAgentRunAssistantRuntime = () =>
+  useLocalRuntime(agentRunModel, {
     adapters: {
       suggestion: {
         async generate() {
           return [
             { prompt: "Explain the runtime boundary" },
             { prompt: "Show me the frontend stack" },
-            { prompt: "Trigger an error preview" },
+            { prompt: "Help me learn a new concept" },
           ];
         },
       },
