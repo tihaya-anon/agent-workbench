@@ -1,4 +1,4 @@
-export type { AgentRunExecutor } from "./agent-run-executor";
+export { AgentRunExecutionError, type AgentRunExecutor } from "./agent-run-executor";
 export {
   agentInput,
   agentOutput,

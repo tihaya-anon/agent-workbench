@@ -1,8 +1,12 @@
-import type { AgentRunExecutor } from "@teach-everything/agent";
+import { AgentRunExecutionError, type AgentRunExecutor } from "@teach-everything/agent";
 import {
+  agentRunErrorClassificationSchema,
+  agentRunExecutorEventSchema,
   agentRunRequestSchema,
   encodeAgentRunEventLine,
   healthResponseSchema,
+  isAgentRunValidationError,
+  type AgentRunEvent,
 } from "@teach-everything/shared";
 import { Hono } from "hono";
 import { logger } from "./logger";
@@ -11,6 +15,20 @@ export interface CreateAppOptions {
   agentRunExecutor?: AgentRunExecutor;
   createAgentRunId?: () => string;
 }
+
+const getErrorClassification = (error: unknown) => {
+  if (error instanceof AgentRunExecutionError) {
+    const parsedClassification = agentRunErrorClassificationSchema.safeParse(
+      error.errorClassification,
+    );
+    return parsedClassification.success ? parsedClassification.data : "internal";
+  }
+  if (isAgentRunValidationError(error)) return "validation";
+  return "internal";
+};
+
+const isTerminalEvent = (event: AgentRunEvent) =>
+  event.type === "run.completed" || event.type === "run.failed" || event.type === "run.cancelled";
 
 const createAgentRunStream = (
   executor: AgentRunExecutor,
@@ -22,17 +40,41 @@ const createAgentRunStream = (
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
-      controller.enqueue(
-        encoder.encode(encodeAgentRunEventLine({ version: 1, type: "run.started", agentRunId })),
-      );
+      let terminal = false;
+      const send = (event: AgentRunEvent) =>
+        controller.enqueue(encoder.encode(encodeAgentRunEventLine(event)));
+      const terminate = (event: Extract<AgentRunEvent, { type: `run.${string}` }>) => {
+        if (terminal) return;
+        terminal = true;
+        send(event);
+        controller.close();
+      };
+
+      send({ version: 1, type: "run.started", agentRunId });
 
       try {
-        for await (const event of executor.execute(input, signal)) {
-          controller.enqueue(encoder.encode(encodeAgentRunEventLine(event)));
+        for await (const executorEvent of executor.execute(input, signal)) {
+          const parsedEvent = agentRunExecutorEventSchema.safeParse(executorEvent);
+          if (!parsedEvent.success) {
+            terminate({ version: 1, type: "run.failed", errorClassification: "internal" });
+            return;
+          }
+
+          if (isTerminalEvent(parsedEvent.data)) {
+            terminate(parsedEvent.data);
+            return;
+          }
+
+          send(parsedEvent.data);
         }
-        controller.close();
+
+        terminate({ version: 1, type: "run.failed", errorClassification: "internal" });
       } catch (error) {
-        controller.error(error);
+        terminate({
+          version: 1,
+          type: "run.failed",
+          errorClassification: getErrorClassification(error),
+        });
       }
     },
   });

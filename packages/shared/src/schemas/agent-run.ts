@@ -13,6 +13,8 @@ export const agentRunErrorClassificationSchema = z.enum([
   "internal",
 ]);
 
+export const isAgentRunValidationError = (error: unknown) => error instanceof z.ZodError;
+
 export const agentRunRequestSchema = z
   .object({
     message: z.string().refine((message) => message.trim().length > 0, {

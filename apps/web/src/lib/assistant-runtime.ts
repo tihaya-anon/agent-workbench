@@ -25,28 +25,40 @@ const getLatestUserText = (messages: readonly ThreadMessage[]) => {
   );
 };
 
+const protocolError = () => new Error("Agent Run stream violates protocol");
+
+const decodeAgentRunEvent = (line: string) => {
+  const parsedEvent = agentRunEventLineSchema.safeParse(`${line}\n`);
+  if (!parsedEvent.success) throw protocolError();
+  return parsedEvent.data;
+};
+
 const readAgentRunEvents = async function* (body: ReadableStream<Uint8Array>) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let pending = "";
 
-  while (true) {
-    const { done, value } = await reader.read();
-    pending += decoder.decode(value, { stream: !done });
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (value) pending += decoder.decode(value, { stream: true });
+      if (done) {
+        pending += decoder.decode();
+        break;
+      }
 
-    let delimiter = pending.indexOf("\n");
-    while (delimiter >= 0) {
-      const line = pending.slice(0, delimiter);
-      pending = pending.slice(delimiter + 1);
-      yield agentRunEventLineSchema.parse(`${line}\n`);
-      delimiter = pending.indexOf("\n");
+      let delimiter = pending.indexOf("\n");
+      while (delimiter >= 0) {
+        const line = pending.slice(0, delimiter);
+        pending = pending.slice(delimiter + 1);
+        yield decodeAgentRunEvent(line);
+        delimiter = pending.indexOf("\n");
+      }
     }
 
-    if (done) break;
-  }
-
-  if (pending.length > 0) {
-    yield agentRunEventLineSchema.parse(pending);
+    if (pending.length > 0) throw protocolError();
+  } finally {
+    reader.releaseLock();
   }
 };
 
@@ -76,30 +88,50 @@ export const createAgentRunModel = (fetcher: typeof fetch = fetch): ChatModelAda
       throw new Error("Agent Run response is missing its stream identifier or body");
     }
 
-    let agentRunId: string | undefined;
+    let agentRunId = "";
+    let started = false;
+    let terminalEvent: AgentRunEvent | undefined;
     let text = "";
 
     for await (const event of readAgentRunEvents(response.body)) {
-      agentRunId ??= getAgentRunId(event, responseAgentRunId);
+      if (terminalEvent) throw protocolError();
+
+      if (!started) {
+        agentRunId = getAgentRunId(event, responseAgentRunId);
+        started = true;
+        continue;
+      }
 
       if (event.type === "message.delta") {
         text += event.text;
         yield { content: [{ type: "text", text }], metadata: { custom: { agentRunId } } };
+        continue;
       }
 
-      if (event.type === "run.completed") {
-        yield {
-          content: [{ type: "text", text }],
-          metadata: { custom: { agentRunId } },
-          status: { type: "complete", reason: "stop" },
-        };
-        return;
+      if (
+        event.type === "run.completed" ||
+        event.type === "run.failed" ||
+        event.type === "run.cancelled"
+      ) {
+        terminalEvent = event;
+        continue;
       }
 
-      if (event.type === "run.failed" || event.type === "run.cancelled") {
-        throw new Error("Agent Run did not complete successfully");
-      }
+      throw protocolError();
     }
+
+    if (!started || !terminalEvent) throw protocolError();
+
+    if (terminalEvent.type === "run.completed") {
+      yield {
+        content: [{ type: "text", text }],
+        metadata: { custom: { agentRunId } },
+        status: { type: "complete", reason: "stop" },
+      };
+      return;
+    }
+
+    throw new Error("Agent Run did not complete successfully");
   },
 });
 
