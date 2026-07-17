@@ -71,6 +71,7 @@ export const ensureLabel = async (options: LabelOptions, api: GhApi = ghApi) => 
   const endpoint = (path: string) => repositoryEndpoint(options.repository, path);
 
   try {
+    // Prefer a no-op, then update, and only create after GitHub confirms the label is missing.
     const label = await api(endpoint(`/labels/${encodeURIComponent(options.name)}`), {
       method: "GET",
     });

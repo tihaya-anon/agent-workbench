@@ -1,4 +1,8 @@
 import {
+  OpenInferenceSpanKind,
+  SemanticConventions,
+} from "@arizeai/openinference-semantic-conventions";
+import {
   context,
   INVALID_SPAN_CONTEXT,
   metrics,
@@ -41,8 +45,10 @@ export interface AgentRunTelemetryScope {
 
 const defaultInstrumentationName = "@teach-everything/observability/agent-run";
 
+const agentRunOutcomeAttribute = `${SemanticConventions.METADATA}.agent_run.outcome` as const;
+
 type AgentRunTerminalAttributes = {
-  "agent.run.outcome": AgentRunOutcome;
+  [agentRunOutcomeAttribute]: AgentRunOutcome;
   "error.type"?: AgentRunErrorClassification;
 };
 
@@ -69,7 +75,7 @@ const noopHistogram = {
 const terminalAttributes = (
   terminalOutcome: AgentRunTerminalOutcome,
 ): AgentRunTerminalAttributes => ({
-  "agent.run.outcome": terminalOutcome.outcome,
+  [agentRunOutcomeAttribute]: terminalOutcome.outcome,
   ...(terminalOutcome.outcome === "failed"
     ? { "error.type": terminalOutcome.errorClassification }
     : {}),
@@ -100,7 +106,7 @@ class OpenTelemetryAgentRunTelemetryScope implements AgentRunTelemetryScope {
     this.runInContext(() => {
       runDiagnosticTelemetrySafely(() => {
         this.logger
-          .child({ "agent.run.id": this.agentRunId })
+          .child({ [SemanticConventions.SESSION_ID]: this.agentRunId })
           .info("Agent Run cancellation requested", {
             eventName: "agent.run.cancellation_requested",
           });
@@ -109,6 +115,7 @@ class OpenTelemetryAgentRunTelemetryScope implements AgentRunTelemetryScope {
   }
 
   public finish(terminalOutcome: AgentRunTerminalOutcome) {
+    // Terminal telemetry is idempotent because lifecycle cancellation can race stream cleanup.
     if (this.finished) return;
     this.finished = true;
 
@@ -126,7 +133,7 @@ class OpenTelemetryAgentRunTelemetryScope implements AgentRunTelemetryScope {
         this.runDuration.record(durationSeconds, attributes);
       });
       runDiagnosticTelemetrySafely(() => {
-        const runLogger = this.logger.child({ "agent.run.id": this.agentRunId });
+        const runLogger = this.logger.child({ [SemanticConventions.SESSION_ID]: this.agentRunId });
         if (terminalOutcome.outcome === "failed") {
           const cancellationFailed = terminalOutcome.errorClassification === "cancellation_failed";
 
@@ -180,10 +187,14 @@ class OpenTelemetryAgentRunTelemetry implements AgentRunTelemetry {
 
   public start(agentRunId: string): AgentRunTelemetryScope {
     const startedAt = performance.now();
+    // Fall back to an invalid span when OpenTelemetry is unavailable or misconfigured.
     const span = tryOr(
       () =>
         this.tracer.startSpan("agent.run", {
-          attributes: { "agent.run.id": agentRunId },
+          attributes: {
+            [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.AGENT,
+            [SemanticConventions.SESSION_ID]: agentRunId,
+          },
         }),
       trace.wrapSpanContext(INVALID_SPAN_CONTEXT),
     );
@@ -199,9 +210,11 @@ class OpenTelemetryAgentRunTelemetry implements AgentRunTelemetry {
 
     scope.runInContext(() => {
       runDiagnosticTelemetrySafely(() => {
-        this.options.logger.child({ "agent.run.id": agentRunId }).info("Agent Run accepted", {
-          eventName: "agent.run.accepted",
-        });
+        this.options.logger
+          .child({ [SemanticConventions.SESSION_ID]: agentRunId })
+          .info("Agent Run accepted", {
+            eventName: "agent.run.accepted",
+          });
       });
     });
 

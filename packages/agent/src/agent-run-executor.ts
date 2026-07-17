@@ -14,6 +14,7 @@ export class AgentRunExecutionError extends Error {
   }
 }
 
+// Executors expose streamable domain events instead of UI-specific response shapes.
 export interface AgentRunExecutor {
   execute(input: AgentRunRequest, signal: AbortSignal): AsyncIterable<AgentRunExecutorEvent>;
 }

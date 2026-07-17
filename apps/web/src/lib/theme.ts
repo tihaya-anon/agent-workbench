@@ -10,6 +10,7 @@ const getCurrentTheme = (): Theme =>
 const applyTheme = (theme: Theme) => {
   const isDark = theme === "dark";
 
+  // Keep Tailwind dark mode, browser UI color, and persisted preference in sync.
   document.documentElement.classList.toggle("dark", isDark);
   document.documentElement.style.colorScheme = theme;
   document

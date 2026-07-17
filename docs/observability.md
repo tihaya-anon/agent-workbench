@@ -69,16 +69,20 @@ process termination.
 
 Use stable, low-cardinality span names. LangChain and LangGraph runs use
 `langchain.<kind>.<run_name>`, for example `langchain.chain.generate`. Put request-specific values in
-attributes, never in the span name. Prefer official OpenTelemetry semantic convention keys when they
-exist; prefix project-specific attributes with the owning domain.
+attributes, never in the span name. Use OpenInference semantic convention attributes for agent,
+graph, LLM, tool, retrieval, token, and session metadata. When OpenInference does not define a
+direct attribute, place bounded operational metadata under its `metadata.*` namespace rather than
+recording prompt, response, tool argument, or document payload fields.
 
 `createLangChainTelemetryCallback` maps graph, node, LLM, tool, and retriever lifecycle events to
 OpenTelemetry spans and low-cardinality metrics. It records `langchain.run.duration` for visible runs
-and `gen_ai.client.token.usage` when LangChain exposes model usage metadata. Token usage metric
-attributes are limited to token type plus provider and model metadata. Bind the callback once through
-LangGraph `withConfig({ callbacks })`; node functions must not manage those spans or metrics
-themselves. Hidden framework runs, callback run identifiers, tags, and high-cardinality checkpoint
-metadata are not exported.
+and `gen_ai.client.token.usage` when LangChain exposes model usage metadata. The OpenInference
+package defines trace/resource attributes, not metric instrument names, so metric names remain
+stable while their attributes use OpenInference keys. Token usage metric attributes are limited to
+token type plus provider and model metadata. Bind the callback once through LangGraph
+`withConfig({ callbacks })`; node functions must not manage those spans or metrics themselves.
+Hidden framework runs, callback run identifiers, tags, and high-cardinality checkpoint metadata are
+not exported.
 
 Register conditional routers as named LangChain runnables rather than plain functions when their
 execution should be traced. LangGraph 1.4.x marks its internal plain-function branch wrapper as

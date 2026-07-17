@@ -42,6 +42,7 @@ const normalizeInput: AgentNode = (state) => {
 const getCurrentRunId = (callbacks: RunnableConfig["callbacks"]) =>
   callbacks === undefined || Array.isArray(callbacks) ? undefined : callbacks.getParentRunId();
 
+// Preserve LangGraph's accepted node forms while still wrapping execution in telemetry context.
 const isAgentRunnable = (
   node: AgentNode,
 ): node is RunnableInterface<AgentState, AgentStateUpdate | Partial<AgentState>> =>
@@ -73,6 +74,7 @@ const observedNode = <Name extends string>(name: Name, node: AgentNode) =>
   [name, withActiveNodeContext(node)] as const;
 
 export const createAgentGraph = (generateNode: AgentNode) =>
+  // Export the native compiled graph so callers keep LangGraph streaming and callback behavior.
   new StateGraph({
     state: agentState,
     input: agentInput,

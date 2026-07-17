@@ -89,6 +89,7 @@ const quotePlaintextValue = (value: LogAttributeValue) => {
 };
 
 const formatPlaintext = (record: LogRecord) => {
+  // Plaintext keeps the same structured fields as JSON, just sorted for readability.
   const context = {
     ...record.resource,
     ...record.attributes,
@@ -205,6 +206,7 @@ export const createLogger = (options: LoggerOptions): Logger => {
 
       const now = new Date().toISOString();
       const activeSpanContext = trace.getActiveSpan()?.spanContext();
+      // Attach trace IDs only when a real OpenTelemetry span is active.
       const spanContext =
         activeSpanContext !== undefined && isSpanContextValid(activeSpanContext)
           ? activeSpanContext

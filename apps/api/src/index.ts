@@ -27,6 +27,7 @@ const closeServer = () =>
   });
 
 const shutdown = (signal: NodeJS.Signals) => {
+  // Signal handlers can overlap; share one shutdown path so resources close once.
   shutdownPromise ??= (async () => {
     logger.info("API server stopping", {
       eventName: "server.stopping",

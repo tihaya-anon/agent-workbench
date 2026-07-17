@@ -17,6 +17,7 @@ export interface NodeTelemetry {
 
 export const startNodeTelemetry = (options: NodeTelemetryOptions): NodeTelemetry => {
   const environment = options.environment ?? process.env;
+  // Default to disabled; local development should not require an OTLP collector.
   const enabled = environment.OTEL_SDK_DISABLED?.toLowerCase() === "false";
   if (!enabled) {
     return {

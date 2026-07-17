@@ -30,6 +30,7 @@ const useApiState = () => {
   const [apiState, setApiState] = useState<ApiState>({ status: "loading" });
 
   useEffect(() => {
+    // Keep the health check fire-and-forget without setting state after unmount.
     let active = true;
 
     const checkApi = async () => {
@@ -134,6 +135,7 @@ export const App = () => {
   const runtime = useAgentRunAssistantRuntime();
 
   return (
+    // assistant-ui owns conversation state; the custom runtime adapts it to Agent Run streams.
     <AssistantRuntimeProvider runtime={runtime}>
       <Workspace />
     </AssistantRuntimeProvider>

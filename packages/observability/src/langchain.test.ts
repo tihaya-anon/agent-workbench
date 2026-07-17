@@ -1,3 +1,7 @@
+import {
+  OpenInferenceSpanKind,
+  SemanticConventions,
+} from "@arizeai/openinference-semantic-conventions";
 import { metrics, SpanStatusCode, trace } from "@opentelemetry/api";
 import {
   AggregationTemporality,
@@ -10,6 +14,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createAgentRunTelemetry } from "./agent-run";
 import { createLangChainTelemetryCallback } from "./langchain";
 import type { Logger } from "./logger";
+
+const langGraphStepAttribute = `${SemanticConventions.METADATA}.langgraph.step`;
+const llmOperationAttribute = `${SemanticConventions.METADATA}.llm.operation.name`;
+const runStatusAttribute = `${SemanticConventions.METADATA}.langchain.run.status`;
+const tokenTypeAttribute = `${SemanticConventions.METADATA}.llm.token.type`;
 
 const noopLogger: Logger = {
   trace: () => undefined,
@@ -213,43 +222,39 @@ describe("createLangChainTelemetryCallback", () => {
     expect(toolSpan?.parentSpanContext?.spanId).toBe(graphSpan?.spanContext().spanId);
 
     expect(graphSpan?.attributes).toMatchObject({
-      "langchain.run.kind": "chain",
-      "langchain.run.name": "agent",
-      "langchain.run.status": "ok",
-      "langgraph.node.name": "generate",
-      "langgraph.step": 2,
+      [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.CHAIN,
+      [SemanticConventions.AGENT_NAME]: "agent",
+      [SemanticConventions.GRAPH_NODE_NAME]: "generate",
+      [langGraphStepAttribute]: 2,
+      [runStatusAttribute]: "ok",
     });
     expect(modelSpan?.attributes).toMatchObject({
-      "gen_ai.operation.name": "chat",
-      "gen_ai.provider.name": "openai",
-      "gen_ai.request.model": "gpt-safe-request",
-      "gen_ai.response.model": "gpt-safe-response",
-      "gen_ai.usage.input_tokens": 13,
-      "gen_ai.usage.output_tokens": 21,
-      "langchain.run.kind": "llm",
-      "langchain.run.name": "ChatOpenAI",
-      "langchain.run.status": "ok",
+      [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.LLM,
+      [llmOperationAttribute]: "chat",
+      [SemanticConventions.LLM_PROVIDER]: "openai",
+      [SemanticConventions.LLM_MODEL_NAME]: "gpt-safe-response",
+      [SemanticConventions.LLM_TOKEN_COUNT_PROMPT]: 13,
+      [SemanticConventions.LLM_TOKEN_COUNT_COMPLETION]: 21,
+      [SemanticConventions.LLM_FINISH_REASON]: "stop",
+      [runStatusAttribute]: "ok",
     });
     expect(toolSpan?.attributes).toMatchObject({
-      "gen_ai.tool.name": "LookupTool",
-      "langchain.run.kind": "tool",
-      "langchain.run.name": "LookupTool",
-      "langchain.run.status": "ok",
+      [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.TOOL,
+      [SemanticConventions.TOOL_NAME]: "LookupTool",
+      [runStatusAttribute]: "ok",
     });
 
     const tokenMetric = findMetric(metricsData, "gen_ai.client.token.usage");
     expect(tokenMetric?.dataPoints.map((dataPoint) => dataPoint.attributes)).toEqual([
       {
-        "gen_ai.provider.name": "openai",
-        "gen_ai.request.model": "gpt-safe-request",
-        "gen_ai.response.model": "gpt-safe-response",
-        "gen_ai.token.type": "input",
+        [SemanticConventions.LLM_PROVIDER]: "openai",
+        [SemanticConventions.LLM_MODEL_NAME]: "gpt-safe-response",
+        [tokenTypeAttribute]: "input",
       },
       {
-        "gen_ai.provider.name": "openai",
-        "gen_ai.request.model": "gpt-safe-request",
-        "gen_ai.response.model": "gpt-safe-response",
-        "gen_ai.token.type": "output",
+        [SemanticConventions.LLM_PROVIDER]: "openai",
+        [SemanticConventions.LLM_MODEL_NAME]: "gpt-safe-response",
+        [tokenTypeAttribute]: "output",
       },
     ]);
 
@@ -302,17 +307,17 @@ describe("createLangChainTelemetryCallback", () => {
     expect(toolSpan?.status.code).toBe(SpanStatusCode.ERROR);
     expect(toolSpan?.events).toEqual([]);
     expect(toolSpan?.attributes).toMatchObject({
-      "langchain.run.kind": "tool",
-      "langchain.run.name": "lookup",
-      "langchain.run.status": "error",
+      [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.TOOL,
+      [SemanticConventions.TOOL_NAME]: "lookup",
+      [runStatusAttribute]: "error",
     });
 
     const durationMetric = findMetric(metricsData, "langchain.run.duration");
     expect(durationMetric?.dataPoints).toHaveLength(1);
     expect(durationMetric?.dataPoints[0]?.attributes).toMatchObject({
-      "langchain.run.kind": "tool",
-      "langchain.run.name": "lookup",
-      "langchain.run.status": "error",
+      [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.TOOL,
+      [SemanticConventions.TOOL_NAME]: "lookup",
+      [runStatusAttribute]: "error",
     });
 
     const telemetryPayload = serializeTelemetryPayload(metricsData, spans);
@@ -364,23 +369,21 @@ describe("createLangChainTelemetryCallback", () => {
     expect(modelSpan?.status.code).toBe(SpanStatusCode.UNSET);
     expect(modelSpan?.events).toEqual([]);
     expect(modelSpan?.attributes).toMatchObject({
-      "gen_ai.operation.name": "chat",
-      "gen_ai.provider.name": "openai",
-      "gen_ai.request.model": "gpt-safe-request",
-      "langchain.run.kind": "llm",
-      "langchain.run.name": "ChatOpenAI",
-      "langchain.run.status": "ok",
+      [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.LLM,
+      [llmOperationAttribute]: "chat",
+      [SemanticConventions.LLM_PROVIDER]: "openai",
+      [SemanticConventions.LLM_MODEL_NAME]: "gpt-safe-request",
+      [runStatusAttribute]: "ok",
     });
 
     const durationMetric = findMetric(metricsData, "langchain.run.duration");
     expect(durationMetric?.dataPoints).toHaveLength(1);
     expect(durationMetric?.dataPoints[0]?.attributes).toMatchObject({
-      "gen_ai.operation.name": "chat",
-      "gen_ai.provider.name": "openai",
-      "gen_ai.request.model": "gpt-safe-request",
-      "langchain.run.kind": "llm",
-      "langchain.run.name": "ChatOpenAI",
-      "langchain.run.status": "ok",
+      [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.LLM,
+      [llmOperationAttribute]: "chat",
+      [SemanticConventions.LLM_PROVIDER]: "openai",
+      [SemanticConventions.LLM_MODEL_NAME]: "gpt-safe-request",
+      [runStatusAttribute]: "ok",
     });
 
     const telemetryPayload = serializeTelemetryPayload(metricsData, spans);

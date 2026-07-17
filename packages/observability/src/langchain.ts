@@ -1,3 +1,7 @@
+import {
+  OpenInferenceSpanKind,
+  SemanticConventions,
+} from "@arizeai/openinference-semantic-conventions";
 import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
 import {
   SpanStatusCode,
@@ -30,19 +34,40 @@ type ActiveRun = {
 
 type RunKind = "chain" | "llm" | "retriever" | "tool";
 
+const openInferenceSpanKind = (kind: RunKind): OpenInferenceSpanKind => {
+  switch (kind) {
+    case "chain":
+      return OpenInferenceSpanKind.CHAIN;
+    case "llm":
+      return OpenInferenceSpanKind.LLM;
+    case "retriever":
+      return OpenInferenceSpanKind.RETRIEVER;
+    case "tool":
+      return OpenInferenceSpanKind.TOOL;
+  }
+};
+
+const runStatusAttribute = `${SemanticConventions.METADATA}.langchain.run.status` as const;
+
+const llmOperationAttribute = `${SemanticConventions.METADATA}.llm.operation.name` as const;
+
+const langGraphStepAttribute = `${SemanticConventions.METADATA}.langgraph.step` as const;
+
+const tokenTypeAttribute = `${SemanticConventions.METADATA}.llm.token.type` as const;
+
 const commonRunAttributes = (
   kind: RunKind,
   name: string | undefined,
   metadata: Record<string, unknown> | undefined,
 ): Attributes => ({
-  "langchain.run.kind": kind,
-  "langchain.run.name": name ?? "anonymous",
-  ...(kind === "tool" && name !== undefined ? { "gen_ai.tool.name": name } : {}),
+  [SemanticConventions.OPENINFERENCE_SPAN_KIND]: openInferenceSpanKind(kind),
+  ...(kind === "chain" && name !== undefined ? { [SemanticConventions.AGENT_NAME]: name } : {}),
+  ...(kind === "tool" && name !== undefined ? { [SemanticConventions.TOOL_NAME]: name } : {}),
   ...(typeof metadata?.ls_provider === "string"
-    ? { "gen_ai.provider.name": metadata.ls_provider }
+    ? { [SemanticConventions.LLM_PROVIDER]: metadata.ls_provider }
     : {}),
   ...(typeof metadata?.ls_model_name === "string"
-    ? { "gen_ai.request.model": metadata.ls_model_name }
+    ? { [SemanticConventions.LLM_MODEL_NAME]: metadata.ls_model_name }
     : {}),
 });
 
@@ -53,22 +78,19 @@ const runAttributes = (
 ): Attributes => ({
   ...commonRunAttributes(kind, name, metadata),
   ...(typeof metadata?.langgraph_node === "string"
-    ? { "langgraph.node.name": metadata.langgraph_node }
+    ? { [SemanticConventions.GRAPH_NODE_NAME]: metadata.langgraph_node }
     : {}),
   ...(typeof metadata?.langgraph_step === "number"
-    ? { "langgraph.step": metadata.langgraph_step }
+    ? { [langGraphStepAttribute]: metadata.langgraph_step }
     : {}),
 });
 
 const tokenMetricAttributes = (attributes: Attributes): Attributes => ({
-  ...(typeof attributes["gen_ai.provider.name"] === "string"
-    ? { "gen_ai.provider.name": attributes["gen_ai.provider.name"] }
+  ...(typeof attributes[SemanticConventions.LLM_PROVIDER] === "string"
+    ? { [SemanticConventions.LLM_PROVIDER]: attributes[SemanticConventions.LLM_PROVIDER] }
     : {}),
-  ...(typeof attributes["gen_ai.request.model"] === "string"
-    ? { "gen_ai.request.model": attributes["gen_ai.request.model"] }
-    : {}),
-  ...(typeof attributes["gen_ai.response.model"] === "string"
-    ? { "gen_ai.response.model": attributes["gen_ai.response.model"] }
+  ...(typeof attributes[SemanticConventions.LLM_MODEL_NAME] === "string"
+    ? { [SemanticConventions.LLM_MODEL_NAME]: attributes[SemanticConventions.LLM_MODEL_NAME] }
     : {}),
 });
 
@@ -79,8 +101,8 @@ const metricAttributes = (
   attributes: Attributes,
 ): Attributes => ({
   ...commonRunAttributes(kind, name, metadata),
-  ...(typeof attributes["gen_ai.operation.name"] === "string"
-    ? { "gen_ai.operation.name": attributes["gen_ai.operation.name"] }
+  ...(typeof attributes[llmOperationAttribute] === "string"
+    ? { [llmOperationAttribute]: attributes[llmOperationAttribute] }
     : {}),
 });
 
@@ -122,6 +144,7 @@ type LlmResultTelemetry = {
 const readLlmResultTelemetry = (output: unknown): LlmResultTelemetry => {
   if (!isRecord(output)) return { attributes: {} };
 
+  // Providers report usage in different shapes; collect the common LangChain variants.
   const attributes: Attributes = {};
   let inputTokens: number | undefined;
   let outputTokens: number | undefined;
@@ -156,10 +179,10 @@ const readLlmResultTelemetry = (output: unknown): LlmResultTelemetry => {
         const finishReason = generationInfo?.finish_reason ?? responseMetadata?.finish_reason;
 
         if (typeof finishReason === "string") finishReasons.add(finishReason);
-        if (attributes["gen_ai.response.model"] === undefined) {
+        if (attributes[SemanticConventions.LLM_MODEL_NAME] === undefined) {
           const responseModel = responseMetadata?.model_name ?? responseMetadata?.model;
           if (typeof responseModel === "string") {
-            attributes["gen_ai.response.model"] = responseModel;
+            attributes[SemanticConventions.LLM_MODEL_NAME] = responseModel;
           }
         }
         if (usageMetadata !== undefined) {
@@ -170,10 +193,14 @@ const readLlmResultTelemetry = (output: unknown): LlmResultTelemetry => {
     }
   }
 
-  if (inputTokens !== undefined) attributes["gen_ai.usage.input_tokens"] = inputTokens;
-  if (outputTokens !== undefined) attributes["gen_ai.usage.output_tokens"] = outputTokens;
+  if (inputTokens !== undefined)
+    attributes[SemanticConventions.LLM_TOKEN_COUNT_PROMPT] = inputTokens;
+  if (outputTokens !== undefined) {
+    attributes[SemanticConventions.LLM_TOKEN_COUNT_COMPLETION] = outputTokens;
+  }
   if (finishReasons.size > 0) {
-    attributes["gen_ai.response.finish_reasons"] = [...finishReasons];
+    const reasons = [...finishReasons];
+    attributes[SemanticConventions.LLM_FINISH_REASON] = reasons.length === 1 ? reasons[0] : reasons;
   }
 
   return {
@@ -264,6 +291,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
     const runContext = runId === undefined ? undefined : this.activeRuns.get(runId)?.context;
     if (runContext === undefined) return operation();
 
+    // Some context managers call the closure in unusual ways; keep operation execution exactly once.
     let invoked = false;
     let operationFailed = false;
     let operationError: unknown;
@@ -319,6 +347,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
         (parentRunId === undefined ? undefined : this.activeRuns.get(parentRunId)?.context) ??
         context.active();
       if (tags?.includes("langsmith:hidden") === true) {
+        // Hidden LangSmith runs should not create spans but must keep child context attached.
         this.activeRuns.set(runId, { context: parentContext });
         return;
       }
@@ -350,7 +379,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
     this.safely(() =>
       this.runDuration.record(durationSeconds, {
         ...run.metricAttributes,
-        "langchain.run.status": status,
+        [runStatusAttribute]: status,
       }),
     );
   }
@@ -365,7 +394,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
       this.safely(() =>
         span.setAttributes({
           ...attributes,
-          "langchain.run.status": "ok",
+          [runStatusAttribute]: "ok",
         }),
       );
       this.safely(() => span.end());
@@ -379,7 +408,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
     if (run?.span === undefined) return;
 
     const span = run.span;
-    this.safely(() => span.setAttribute("langchain.run.status", "error"));
+    this.safely(() => span.setAttribute(runStatusAttribute, "error"));
     this.safely(() => span.setStatus({ code: SpanStatusCode.ERROR }));
     this.safely(() => span.end());
     this.recordDuration(run, "error");
@@ -399,7 +428,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
         this.safely(() =>
           this.tokenUsage.record(inputTokens, {
             ...tokenAttributes,
-            "gen_ai.token.type": "input",
+            [tokenTypeAttribute]: "input",
           }),
         );
       }
@@ -408,7 +437,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
         this.safely(() =>
           this.tokenUsage.record(outputTokens, {
             ...tokenAttributes,
-            "gen_ai.token.type": "output",
+            [tokenTypeAttribute]: "output",
           }),
         );
       }
@@ -449,7 +478,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
     runName?: string,
   ) {
     this.startRun("llm", runName, runId, parentRunId, tags, metadata, {
-      "gen_ai.operation.name": "text_completion",
+      [llmOperationAttribute]: "text_completion",
     });
   }
 
@@ -464,7 +493,7 @@ class OpenTelemetryCallbackHandler extends BaseCallbackHandler {
     runName?: string,
   ) {
     this.startRun("llm", runName, runId, parentRunId, tags, metadata, {
-      "gen_ai.operation.name": "chat",
+      [llmOperationAttribute]: "chat",
     });
   }
 

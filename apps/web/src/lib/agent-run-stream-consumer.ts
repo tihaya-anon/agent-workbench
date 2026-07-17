@@ -40,6 +40,7 @@ const readAgentRunEvents = async function* (
 ): AsyncIterable<AgentRunEvent> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
+  // Chunks do not align with NDJSON records, so keep partial lines between reads.
   let pending = "";
 
   try {
@@ -67,6 +68,7 @@ const readAgentRunEvents = async function* (
 };
 
 const requireStartedEvent = (event: AgentRunEvent, agentRunId: string) => {
+  // The first event binds the body stream to the ID returned in the response header.
   if (event.type !== "run.started" || event.agentRunId !== agentRunId) {
     throw protocolError();
   }
@@ -81,6 +83,7 @@ export const consumeAgentRunStream = async function* ({
   let text = "";
 
   for await (const event of readAgentRunEvents(body)) {
+    // Anything after a terminal event means the server violated the stream contract.
     if (terminated) throw protocolError();
 
     if (!started) {

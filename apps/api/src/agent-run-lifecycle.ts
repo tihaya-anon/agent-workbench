@@ -62,6 +62,7 @@ class AsyncEventQueue<T> implements AsyncIterable<T> {
   public enqueue(item: T) {
     if (this.closed) return;
 
+    // Deliver directly to a waiting reader before buffering for future pulls.
     const waiter = this.waiters.shift();
     if (waiter) {
       waiter({ done: false, value: item });
@@ -125,6 +126,7 @@ export const createAgentRunLifecycle = ({
   const events = new AsyncEventQueue<AgentRunEvent>();
   let completion: Promise<void> | undefined;
   let cancellationRequestedBeforeStart = false;
+  // cancel() can be called before any consumer starts reading the event stream.
   let requestCancellation = () => {
     cancellationRequestedBeforeStart = true;
   };
@@ -172,6 +174,7 @@ export const createAgentRunLifecycle = ({
         if (cleanupConfirmation !== undefined) return cleanupConfirmation;
         if (iterator?.return === undefined) return undefined;
 
+        // Reuse the same cleanup promise so cancellation races do not call return() twice.
         cleanupConfirmation = iterator.return().then(
           () => "cleanup" as const,
           () => "cleanup_failed" as const,
@@ -262,6 +265,7 @@ export const createAgentRunLifecycle = ({
           }
 
           if (cancellationRequested) {
+            // After cancellation, executor content is ignored until cleanup or a terminal signal wins.
             if (executorResult.type === "error" || executorResult.result.done === true) {
               await finishCancellationAfterCleanup();
               return;

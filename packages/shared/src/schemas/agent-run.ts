@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// Increment this only when the wire protocol changes incompatibly.
 export const agentRunProtocolVersion = 1 as const;
 
 export const agentRunOutcomeSchema = z.enum(["succeeded", "failed", "cancelled"]);
@@ -93,6 +94,7 @@ export const agentRunEventLineSchema = z.preprocess((line) => {
     return undefined;
   }
 
+  // Decode after framing validation so malformed multi-line payloads cannot slip through.
   try {
     return JSON.parse(record) as unknown;
   } catch {

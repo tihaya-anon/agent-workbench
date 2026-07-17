@@ -1,4 +1,8 @@
 import {
+  OpenInferenceSpanKind,
+  SemanticConventions,
+} from "@arizeai/openinference-semantic-conventions";
+import {
   context,
   metrics,
   SpanStatusCode,
@@ -20,6 +24,8 @@ import {
   type AgentRunTerminalOutcome,
 } from "./agent-run";
 import type { Logger, LogAttributes, LogContext } from "./logger";
+
+const agentRunOutcomeAttribute = `${SemanticConventions.METADATA}.agent_run.outcome`;
 
 type CapturedLogRecord = {
   attributes: LogAttributes;
@@ -220,14 +226,15 @@ describe("createAgentRunTelemetry", () => {
     const rootSpan = spans.find((span) => span.name === "agent.run");
     expect(rootSpan).toBeDefined();
     expect(rootSpan?.attributes).toMatchObject({
-      "agent.run.id": "ar_success_telemetry",
-      "agent.run.outcome": "succeeded",
+      [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.AGENT,
+      [SemanticConventions.SESSION_ID]: "ar_success_telemetry",
+      [agentRunOutcomeAttribute]: "succeeded",
     });
     expect(rootSpan?.status.code).toBe(SpanStatusCode.UNSET);
     expect(rootSpan?.events).toEqual([]);
 
     const runLogs = logs.filter(
-      (record) => record.attributes["agent.run.id"] === "ar_success_telemetry",
+      (record) => record.attributes[SemanticConventions.SESSION_ID] === "ar_success_telemetry",
     );
     expect(runLogs.map((record) => record.eventName)).toEqual([
       "agent.run.accepted",
@@ -237,14 +244,17 @@ describe("createAgentRunTelemetry", () => {
       true,
     );
     expect(runLogs.map((record) => record.attributes)).toEqual([
-      { "agent.run.id": "ar_success_telemetry" },
-      { "agent.run.id": "ar_success_telemetry", "agent.run.outcome": "succeeded" },
+      { [SemanticConventions.SESSION_ID]: "ar_success_telemetry" },
+      {
+        [SemanticConventions.SESSION_ID]: "ar_success_telemetry",
+        [agentRunOutcomeAttribute]: "succeeded",
+      },
     ]);
 
     const durationMetric = findAgentRunDurationMetric(metricsData);
     expect(durationMetric?.dataPoints).toHaveLength(1);
     expect(durationMetric?.dataPoints[0]?.attributes).toEqual({
-      "agent.run.outcome": "succeeded",
+      [agentRunOutcomeAttribute]: "succeeded",
     });
     expect(JSON.stringify(durationMetric?.dataPoints)).not.toContain("ar_success_telemetry");
   });
@@ -272,25 +282,26 @@ describe("createAgentRunTelemetry", () => {
       // Then
       const rootSpan = spans.find((span) => span.name === "agent.run");
       expect(rootSpan?.attributes).toMatchObject({
-        "agent.run.id": "ar_failure_telemetry",
-        "agent.run.outcome": "failed",
+        [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.AGENT,
+        [SemanticConventions.SESSION_ID]: "ar_failure_telemetry",
+        [agentRunOutcomeAttribute]: "failed",
         "error.type": errorClassification,
       });
       expect(rootSpan?.status.code).toBe(SpanStatusCode.ERROR);
       expect(rootSpan?.events).toEqual([]);
 
       const runLogs = logs.filter(
-        (record) => record.attributes["agent.run.id"] === "ar_failure_telemetry",
+        (record) => record.attributes[SemanticConventions.SESSION_ID] === "ar_failure_telemetry",
       );
       expect(runLogs.map((record) => record.eventName)).toEqual([
         "agent.run.accepted",
         terminalLogName({ outcome: "failed", errorClassification }),
       ]);
       expect(runLogs.map((record) => record.attributes)).toEqual([
-        { "agent.run.id": "ar_failure_telemetry" },
+        { [SemanticConventions.SESSION_ID]: "ar_failure_telemetry" },
         {
-          "agent.run.id": "ar_failure_telemetry",
-          "agent.run.outcome": "failed",
+          [SemanticConventions.SESSION_ID]: "ar_failure_telemetry",
+          [agentRunOutcomeAttribute]: "failed",
           "error.type": errorClassification,
         },
       ]);
@@ -298,7 +309,7 @@ describe("createAgentRunTelemetry", () => {
       const durationMetric = findAgentRunDurationMetric(metricsData);
       expect(durationMetric?.dataPoints).toHaveLength(1);
       expect(durationMetric?.dataPoints[0]?.attributes).toEqual({
-        "agent.run.outcome": "failed",
+        [agentRunOutcomeAttribute]: "failed",
         "error.type": errorClassification,
       });
       expect(JSON.stringify(durationMetric?.dataPoints)).not.toContain("ar_failure_telemetry");
@@ -322,13 +333,14 @@ describe("createAgentRunTelemetry", () => {
     // Then
     const rootSpan = spans.find((span) => span.name === "agent.run");
     expect(rootSpan?.attributes).toMatchObject({
-      "agent.run.id": "ar_cancelled_telemetry",
-      "agent.run.outcome": "cancelled",
+      [SemanticConventions.OPENINFERENCE_SPAN_KIND]: OpenInferenceSpanKind.AGENT,
+      [SemanticConventions.SESSION_ID]: "ar_cancelled_telemetry",
+      [agentRunOutcomeAttribute]: "cancelled",
     });
     expect(rootSpan?.status.code).toBe(SpanStatusCode.UNSET);
 
     const runLogs = logs.filter(
-      (record) => record.attributes["agent.run.id"] === "ar_cancelled_telemetry",
+      (record) => record.attributes[SemanticConventions.SESSION_ID] === "ar_cancelled_telemetry",
     );
     expect(runLogs.map((record) => record.eventName)).toEqual([
       "agent.run.accepted",
@@ -338,7 +350,7 @@ describe("createAgentRunTelemetry", () => {
 
     const durationMetric = findAgentRunDurationMetric(metricsData);
     expect(durationMetric?.dataPoints[0]?.attributes).toEqual({
-      "agent.run.outcome": "cancelled",
+      [agentRunOutcomeAttribute]: "cancelled",
     });
   });
 
@@ -395,7 +407,9 @@ describe("createAgentRunTelemetry", () => {
     // Then
     expect(spans.filter((span) => span.name === "agent.run")).toHaveLength(1);
     expect(
-      logs.filter((record) => record.attributes["agent.run.id"] === "ar_terminal_once"),
+      logs.filter(
+        (record) => record.attributes[SemanticConventions.SESSION_ID] === "ar_terminal_once",
+      ),
     ).toHaveLength(2);
     expect(findAgentRunDurationMetric(metricsData)?.dataPoints).toHaveLength(1);
 

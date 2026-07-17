@@ -26,6 +26,7 @@ export const createApp = ({
   const baseApp = new Hono();
   const agentRunTelemetry: AgentRunTelemetry = createAgentRunTelemetry({ logger });
 
+  // Request logging stays outside route handlers so every route gets consistent metadata.
   baseApp.use("*", async (c, next) => {
     const startedAt = performance.now();
 
@@ -45,6 +46,7 @@ export const createApp = ({
   });
 
   baseApp.onError((error, c) => {
+    // Hono validators throw HTTPException; normalize them to the public Agent Run error shape.
     if (error instanceof HTTPException && error.status === 400) {
       return invalidAgentRunRequestResponse(c);
     }

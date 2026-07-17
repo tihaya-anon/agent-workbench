@@ -10,6 +10,7 @@ import { consumeAgentRunStream, type AgentRunStreamUpdate } from "./agent-run-st
 const getLatestUserText = (messages: readonly ThreadMessage[]) => {
   let userMessage: ThreadMessage | undefined;
 
+  // assistant-ui sends the full thread; Agent Run v1 only accepts the latest user turn.
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
     if (message?.role === "user") {
@@ -40,6 +41,7 @@ export const createAgentRunModel = (
   startRun: StartAgentRunStream = startAgentRunStream,
 ): ChatModelAdapter => ({
   async *run({ messages, abortSignal }): AsyncGenerator<ChatModelRunResult, void> {
+    // Bridge assistant-ui's model adapter protocol to the backend's streaming Agent Run API.
     const startedRun = await startRun({
       message: getLatestUserText(messages).trim(),
       signal: abortSignal,

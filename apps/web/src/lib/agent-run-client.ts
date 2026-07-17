@@ -19,6 +19,7 @@ export const startAgentRunStream: StartAgentRunStream = async ({ message, signal
     throw new Error("Agent Run request failed");
   }
 
+  // The header and body together form the stream identity consumed by the protocol reader.
   const agentRunId = response.headers.get("X-Agent-Run-Id");
   if (!agentRunId || !response.body) {
     throw new Error("Agent Run response is missing its stream identifier or body");

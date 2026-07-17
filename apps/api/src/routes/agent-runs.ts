@@ -34,6 +34,7 @@ const createAgentRunStream = (
   requestSignal: AbortSignal,
   telemetryScope: AgentRunTelemetryScope,
 ) => {
+  // The response body is a validated NDJSON stream: one Agent Run event per line.
   const lifecycle = createAgentRunLifecycle({
     agentRunExecutor: executor,
     agentRunId,
@@ -50,6 +51,7 @@ const createAgentRunStream = (
       completion = (async () => {
         try {
           for await (const event of lifecycle.events) {
+            // Once the client disconnects, stop writing and let lifecycle cancellation own cleanup.
             if (!clientWritable) return;
             controller.enqueue(encoder.encode(encodeAgentRunEventLine(event)));
           }
@@ -60,6 +62,7 @@ const createAgentRunStream = (
             clientWritable = false;
           }
         } catch {
+          // Stream controller failures usually mean the peer disappeared mid-run.
           clientWritable = false;
           await lifecycle.cancel();
         }
