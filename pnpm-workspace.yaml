@@ -7,3 +7,8 @@ storeDir: .pnpm-store
 allowBuilds:
   esbuild: true
   protobufjs: true
+
+nodeDownloadMirrors:
+  release: https://npmmirror.com/mirrors/node/
+  rc: https://npmmirror.com/mirrors/node-rc/
+  nightly: https://npmmirror.com/mirrors/node-nightly/

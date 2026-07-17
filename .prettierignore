@@ -4,3 +4,4 @@
 packages/database/drizzle
 instruction.md
 pnpm-lock.yaml
+.agents/skills
