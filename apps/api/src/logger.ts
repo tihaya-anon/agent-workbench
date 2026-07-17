@@ -1,8 +1,14 @@
-import { createLoggerFromEnv } from "@teach-everything/observability";
+import {
+  createLoggerFromEnv,
+  type EnvironmentLoggerOptions,
+} from "@teach-everything/observability";
 
-export const logger = createLoggerFromEnv({
+const loggerOptions: EnvironmentLoggerOptions = {
   defaultServiceName: "teach-everything-api",
-  ...(process.env.npm_package_version === undefined
-    ? {}
-    : { serviceVersion: process.env.npm_package_version }),
-});
+};
+
+if (process.env.npm_package_version !== undefined) {
+  loggerOptions.serviceVersion = process.env.npm_package_version;
+}
+
+export const logger = createLoggerFromEnv(loggerOptions);

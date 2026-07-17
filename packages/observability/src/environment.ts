@@ -3,6 +3,7 @@ import {
   logLevels,
   type LogFormat,
   type LogLevel,
+  type LoggerOptions,
   type LogSinkConfig,
   type Logger,
 } from "./logger";
@@ -67,12 +68,18 @@ const parseSinks = (environment: NodeJS.ProcessEnv): LogSinkConfig[] => {
 
 export const createLoggerFromEnv = (options: EnvironmentLoggerOptions): Logger => {
   const environment = options.environment ?? process.env;
-
-  return createLogger({
+  const loggerOptions: LoggerOptions = {
     serviceName: environment.OTEL_SERVICE_NAME ?? options.defaultServiceName,
-    ...(options.serviceVersion === undefined ? {} : { serviceVersion: options.serviceVersion }),
-    ...(environment.NODE_ENV === undefined ? {} : { environment: environment.NODE_ENV }),
     minimumLevel: parseLevel(environment.LOG_LEVEL),
     sinks: parseSinks(environment),
-  });
+  };
+
+  if (options.serviceVersion !== undefined) {
+    loggerOptions.serviceVersion = options.serviceVersion;
+  }
+  if (environment.NODE_ENV !== undefined) {
+    loggerOptions.environment = environment.NODE_ENV;
+  }
+
+  return createLogger(loggerOptions);
 };

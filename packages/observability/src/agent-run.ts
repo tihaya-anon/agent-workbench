@@ -74,12 +74,17 @@ const noopHistogram = {
 
 const terminalAttributes = (
   terminalOutcome: AgentRunTerminalOutcome,
-): AgentRunTerminalAttributes => ({
-  [agentRunOutcomeAttribute]: terminalOutcome.outcome,
-  ...(terminalOutcome.outcome === "failed"
-    ? { "error.type": terminalOutcome.errorClassification }
-    : {}),
-});
+): AgentRunTerminalAttributes => {
+  const attributes: AgentRunTerminalAttributes = {
+    [agentRunOutcomeAttribute]: terminalOutcome.outcome,
+  };
+
+  if (terminalOutcome.outcome === "failed") {
+    attributes["error.type"] = terminalOutcome.errorClassification;
+  }
+
+  return attributes;
+};
 
 class OpenTelemetryAgentRunTelemetryScope implements AgentRunTelemetryScope {
   private cancellationRequested = false;

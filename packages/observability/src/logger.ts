@@ -90,14 +90,16 @@ const quotePlaintextValue = (value: LogAttributeValue) => {
 
 const formatPlaintext = (record: LogRecord) => {
   // Plaintext keeps the same structured fields as JSON, just sorted for readability.
-  const context = {
+  const context: LogAttributes = {
     ...record.resource,
     ...record.attributes,
-    ...(record.eventName === undefined ? {} : { event_name: record.eventName }),
-    ...(record.traceId === undefined ? {} : { trace_id: record.traceId }),
-    ...(record.spanId === undefined ? {} : { span_id: record.spanId }),
-    ...(record.traceFlags === undefined ? {} : { trace_flags: record.traceFlags }),
   };
+
+  if (record.eventName !== undefined) context.event_name = record.eventName;
+  if (record.traceId !== undefined) context.trace_id = record.traceId;
+  if (record.spanId !== undefined) context.span_id = record.spanId;
+  if (record.traceFlags !== undefined) context.trace_flags = record.traceFlags;
+
   const fields = Object.entries(context)
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, value]) => `${key}=${quotePlaintextValue(value)}`)
@@ -169,11 +171,16 @@ const createSink = (config: LogSinkConfig, onError: (error: Error) => void): Sin
 
 const serializeError = (error: unknown): LogAttributes => {
   if (error instanceof Error) {
-    return {
+    const attributes: LogAttributes = {
       "exception.type": error.name,
       "exception.message": error.message,
-      ...(error.stack === undefined ? {} : { "exception.stacktrace": error.stack }),
     };
+
+    if (error.stack !== undefined) {
+      attributes["exception.stacktrace"] = error.stack;
+    }
+
+    return attributes;
   }
 
   return {
@@ -193,11 +200,15 @@ export const createLogger = (options: LoggerOptions): Logger => {
   );
   const resource: LogAttributes = {
     "service.name": options.serviceName,
-    ...(options.serviceVersion === undefined ? {} : { "service.version": options.serviceVersion }),
-    ...(options.environment === undefined
-      ? {}
-      : { "deployment.environment.name": options.environment }),
   };
+
+  if (options.serviceVersion !== undefined) {
+    resource["service.version"] = options.serviceVersion;
+  }
+  if (options.environment !== undefined) {
+    resource["deployment.environment.name"] = options.environment;
+  }
+
   let shutdownPromise: Promise<void> | undefined;
 
   const buildLogger = (boundAttributes: LogAttributes): Logger => {
@@ -211,12 +222,15 @@ export const createLogger = (options: LoggerOptions): Logger => {
         activeSpanContext !== undefined && isSpanContextValid(activeSpanContext)
           ? activeSpanContext
           : undefined;
-      const attributes = {
+      const attributes: LogAttributes = {
         ...options.attributes,
         ...boundAttributes,
         ...context.attributes,
-        ...(context.error === undefined ? {} : serializeError(context.error)),
       };
+      if (context.error !== undefined) {
+        Object.assign(attributes, serializeError(context.error));
+      }
+
       const record: LogRecord = {
         timestamp: now,
         observedTimestamp: now,
@@ -225,15 +239,16 @@ export const createLogger = (options: LoggerOptions): Logger => {
         body,
         resource,
         attributes,
-        ...(context.eventName === undefined ? {} : { eventName: context.eventName }),
-        ...(spanContext === undefined
-          ? {}
-          : {
-              traceId: spanContext.traceId,
-              spanId: spanContext.spanId,
-              traceFlags: spanContext.traceFlags,
-            }),
       };
+
+      if (context.eventName !== undefined) {
+        record.eventName = context.eventName;
+      }
+      if (spanContext !== undefined) {
+        record.traceId = spanContext.traceId;
+        record.spanId = spanContext.spanId;
+        record.traceFlags = spanContext.traceFlags;
+      }
 
       for (const sink of sinks) sink.write(record);
     };

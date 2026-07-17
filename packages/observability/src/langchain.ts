@@ -59,52 +59,71 @@ const commonRunAttributes = (
   kind: RunKind,
   name: string | undefined,
   metadata: Record<string, unknown> | undefined,
-): Attributes => ({
-  [SemanticConventions.OPENINFERENCE_SPAN_KIND]: openInferenceSpanKind(kind),
-  ...(kind === "chain" && name !== undefined ? { [SemanticConventions.AGENT_NAME]: name } : {}),
-  ...(kind === "tool" && name !== undefined ? { [SemanticConventions.TOOL_NAME]: name } : {}),
-  ...(typeof metadata?.ls_provider === "string"
-    ? { [SemanticConventions.LLM_PROVIDER]: metadata.ls_provider }
-    : {}),
-  ...(typeof metadata?.ls_model_name === "string"
-    ? { [SemanticConventions.LLM_MODEL_NAME]: metadata.ls_model_name }
-    : {}),
-});
+): Attributes => {
+  const attributes: Attributes = {
+    [SemanticConventions.OPENINFERENCE_SPAN_KIND]: openInferenceSpanKind(kind),
+  };
+
+  if (kind === "chain" && name !== undefined) {
+    attributes[SemanticConventions.AGENT_NAME] = name;
+  }
+  if (kind === "tool" && name !== undefined) {
+    attributes[SemanticConventions.TOOL_NAME] = name;
+  }
+  if (typeof metadata?.ls_provider === "string") {
+    attributes[SemanticConventions.LLM_PROVIDER] = metadata.ls_provider;
+  }
+  if (typeof metadata?.ls_model_name === "string") {
+    attributes[SemanticConventions.LLM_MODEL_NAME] = metadata.ls_model_name;
+  }
+
+  return attributes;
+};
 
 const runAttributes = (
   kind: RunKind,
   name: string | undefined,
   metadata: Record<string, unknown> | undefined,
-): Attributes => ({
-  ...commonRunAttributes(kind, name, metadata),
-  ...(typeof metadata?.langgraph_node === "string"
-    ? { [SemanticConventions.GRAPH_NODE_NAME]: metadata.langgraph_node }
-    : {}),
-  ...(typeof metadata?.langgraph_step === "number"
-    ? { [langGraphStepAttribute]: metadata.langgraph_step }
-    : {}),
-});
+): Attributes => {
+  const attributes = commonRunAttributes(kind, name, metadata);
 
-const tokenMetricAttributes = (attributes: Attributes): Attributes => ({
-  ...(typeof attributes[SemanticConventions.LLM_PROVIDER] === "string"
-    ? { [SemanticConventions.LLM_PROVIDER]: attributes[SemanticConventions.LLM_PROVIDER] }
-    : {}),
-  ...(typeof attributes[SemanticConventions.LLM_MODEL_NAME] === "string"
-    ? { [SemanticConventions.LLM_MODEL_NAME]: attributes[SemanticConventions.LLM_MODEL_NAME] }
-    : {}),
-});
+  if (typeof metadata?.langgraph_node === "string") {
+    attributes[SemanticConventions.GRAPH_NODE_NAME] = metadata.langgraph_node;
+  }
+  if (typeof metadata?.langgraph_step === "number") {
+    attributes[langGraphStepAttribute] = metadata.langgraph_step;
+  }
+
+  return attributes;
+};
+
+const tokenMetricAttributes = (source: Attributes): Attributes => {
+  const attributes: Attributes = {};
+
+  if (typeof source[SemanticConventions.LLM_PROVIDER] === "string") {
+    attributes[SemanticConventions.LLM_PROVIDER] = source[SemanticConventions.LLM_PROVIDER];
+  }
+  if (typeof source[SemanticConventions.LLM_MODEL_NAME] === "string") {
+    attributes[SemanticConventions.LLM_MODEL_NAME] = source[SemanticConventions.LLM_MODEL_NAME];
+  }
+
+  return attributes;
+};
 
 const metricAttributes = (
   kind: RunKind,
   name: string | undefined,
   metadata: Record<string, unknown> | undefined,
-  attributes: Attributes,
-): Attributes => ({
-  ...commonRunAttributes(kind, name, metadata),
-  ...(typeof attributes[llmOperationAttribute] === "string"
-    ? { [llmOperationAttribute]: attributes[llmOperationAttribute] }
-    : {}),
-});
+  source: Attributes,
+): Attributes => {
+  const attributes = commonRunAttributes(kind, name, metadata);
+
+  if (typeof source[llmOperationAttribute] === "string") {
+    attributes[llmOperationAttribute] = source[llmOperationAttribute];
+  }
+
+  return attributes;
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -203,11 +222,11 @@ const readLlmResultTelemetry = (output: unknown): LlmResultTelemetry => {
     attributes[SemanticConventions.LLM_FINISH_REASON] = reasons.length === 1 ? reasons[0] : reasons;
   }
 
-  return {
-    attributes,
-    ...(inputTokens === undefined ? {} : { inputTokens }),
-    ...(outputTokens === undefined ? {} : { outputTokens }),
-  };
+  const telemetry: LlmResultTelemetry = { attributes };
+  if (inputTokens !== undefined) telemetry.inputTokens = inputTokens;
+  if (outputTokens !== undefined) telemetry.outputTokens = outputTokens;
+
+  return telemetry;
 };
 
 const spanName = (kind: RunKind, name: string | undefined) =>

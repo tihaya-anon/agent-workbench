@@ -42,12 +42,14 @@ export const parseEnsureLabelArguments = (args: string[]): LabelOptions | { help
   if (color === undefined || !/^[0-9a-fA-F]{6}$/.test(color)) {
     throw new Error("--color must be a six-digit hexadecimal value without #");
   }
-  return {
+  const options: LabelOptions = {
     name,
     color,
     description,
-    ...(repository === undefined ? {} : { repository }),
   };
+  if (repository !== undefined) options.repository = repository;
+
+  return options;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

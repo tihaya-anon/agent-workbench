@@ -29,13 +29,20 @@ const getLatestUserText = (messages: readonly ThreadMessage[]) => {
 
 const toAssistantTextUpdate = (
   update: Extract<AgentRunStreamUpdate, { type: "message" | "completed" }>,
-): ChatModelRunResult => ({
-  content: [{ type: "text", text: update.text }],
-  metadata: { custom: { agentRunId: update.agentRunId } },
-  ...(update.type === "completed"
-    ? { status: { type: "complete" as const, reason: "stop" as const } }
-    : {}),
-});
+): ChatModelRunResult => {
+  if (update.type === "completed") {
+    return {
+      content: [{ type: "text", text: update.text }],
+      metadata: { custom: { agentRunId: update.agentRunId } },
+      status: { type: "complete", reason: "stop" },
+    };
+  }
+
+  return {
+    content: [{ type: "text", text: update.text }],
+    metadata: { custom: { agentRunId: update.agentRunId } },
+  };
+};
 
 export const createAgentRunModel = (
   startRun: StartAgentRunStream = startAgentRunStream,
