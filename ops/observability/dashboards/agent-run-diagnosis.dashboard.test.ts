@@ -27,7 +27,7 @@ const firstTarget = (panel: JsonObject) => {
   return targets[0] as JsonObject;
 };
 
-const fieldLink = (panel: JsonObject, fieldName: string) => {
+const fieldOverride = (panel: JsonObject, fieldName: string, scope?: string) => {
   const fieldConfig = panel.fieldConfig as JsonObject;
   const overrides = fieldConfig.overrides;
   if (!Array.isArray(overrides))
@@ -38,9 +38,18 @@ const fieldLink = (panel: JsonObject, fieldName: string) => {
       typeof candidate === "object" &&
       candidate !== null &&
       !Array.isArray(candidate) &&
-      (candidate.matcher as JsonObject).options === fieldName,
+      (candidate.matcher as JsonObject).options === fieldName &&
+      (candidate.matcher as JsonObject).scope === scope,
   ) as JsonObject | undefined;
-  if (override === undefined) throw new Error(`Missing ${fieldName} override`);
+  if (override === undefined) {
+    throw new Error(`Missing ${scope === undefined ? "top-level" : scope} ${fieldName} override`);
+  }
+
+  return override;
+};
+
+const fieldLink = (panel: JsonObject, fieldName: string, scope?: string) => {
+  const override = fieldOverride(panel, fieldName, scope);
 
   const properties = override.properties;
   if (!Array.isArray(properties)) throw new Error(`${fieldName} override must have properties`);
@@ -59,19 +68,8 @@ const fieldLink = (panel: JsonObject, fieldName: string) => {
   return links[0] as JsonObject;
 };
 
-const fieldLinkProperties = (panel: JsonObject, fieldName: string) => {
-  const fieldConfig = panel.fieldConfig as JsonObject;
-  const overrides = fieldConfig.overrides;
-  if (!Array.isArray(overrides))
-    throw new Error(`Panel ${String(panel.title)} must have overrides`);
-
-  const override = overrides.find(
-    (candidate) =>
-      typeof candidate === "object" &&
-      candidate !== null &&
-      !Array.isArray(candidate) &&
-      (candidate.matcher as JsonObject).options === fieldName,
-  ) as JsonObject | undefined;
+const fieldLinkProperties = (panel: JsonObject, fieldName: string, scope?: string) => {
+  const override = fieldOverride(panel, fieldName, scope);
   if (override === undefined || !Array.isArray(override.properties)) {
     throw new Error(`Missing ${fieldName} link properties`);
   }
@@ -131,25 +129,34 @@ describe("Agent Run Diagnosis dashboard", () => {
 
     // When
     const traceLink = fieldLink(selectedRunSummary, "traceID");
+    const nestedSpanLink = fieldLink(selectedRunSummary, "spanID", "nested");
     const completeTraceSpanLink = fieldLink(completeTrace, "spanID");
     const failedOperationSpanLink = fieldLink(failedOperations, "spanID");
 
     // Then
     expect(traceLink.url).toContain("${__value.raw}");
+    expect(nestedSpanLink.url).toContain("${__data.fields.traceIdHidden}");
+    expect(nestedSpanLink.url).toContain("${__value.raw}");
     expect(completeTraceSpanLink.url).toContain("${__data.fields.traceIdHidden}");
     expect(completeTraceSpanLink.url).toContain("${__value.raw}");
-    for (const link of [traceLink, completeTraceSpanLink, failedOperationSpanLink]) {
+    for (const link of [
+      traceLink,
+      nestedSpanLink,
+      completeTraceSpanLink,
+      failedOperationSpanLink,
+    ]) {
       expect(link.url).toContain("${__from}");
       expect(link.url).toContain("${__to}");
       expect(link.title).toBe("${__value.raw} ↗");
       expect(link.targetBlank).toBe(true);
     }
-    for (const [panel, fieldName] of [
+    for (const [panel, fieldName, scope] of [
       [selectedRunSummary, "traceID"],
+      [selectedRunSummary, "spanID", "nested"],
       [completeTrace, "spanID"],
       [failedOperations, "spanID"],
     ] as const) {
-      const properties = fieldLinkProperties(panel, fieldName);
+      const properties = fieldLinkProperties(panel, fieldName, scope);
       expect(properties[0]).toEqual({ id: "links", value: null });
       expect(properties).toContainEqual({
         id: "custom.cellOptions",

@@ -5,6 +5,7 @@ import {
 } from "@grafana/grafana-foundation-sdk/common";
 import {
   DashboardCursorSync,
+  MatcherScope,
   VariableHide,
   type Dashboard as DashboardV2,
   type DataQueryKind,
@@ -174,10 +175,12 @@ const traceExploreUrl = ({ spanId, traceId }: { spanId?: string; traceId: string
 const fieldLinkOverride = (
   fieldName: string,
   traceLink: { spanId?: string; traceId: string },
+  scope?: MatcherScope,
 ): FieldConfigSource["overrides"][number] => ({
   matcher: {
     id: "byName",
     options: fieldName,
+    ...(scope === undefined ? {} : { scope }),
   },
   properties: [
     {
@@ -236,6 +239,14 @@ const traceSummaryVizConfig = () =>
     fieldLinkOverride("traceID", {
       traceId: GRAFANA_FIELD_VALUE,
     }),
+    fieldLinkOverride(
+      "spanID",
+      {
+        traceId: GRAFANA_TRACE_ID_FIELD,
+        spanId: GRAFANA_FIELD_VALUE,
+      },
+      MatcherScope.Nested,
+    ),
   ]);
 
 const spanTableVizConfig = () =>
