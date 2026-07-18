@@ -27,6 +27,37 @@ const firstTarget = (panel: JsonObject) => {
   return targets[0] as JsonObject;
 };
 
+const fieldLink = (panel: JsonObject, fieldName: string) => {
+  const fieldConfig = panel.fieldConfig as JsonObject;
+  const overrides = fieldConfig.overrides;
+  if (!Array.isArray(overrides))
+    throw new Error(`Panel ${String(panel.title)} must have overrides`);
+
+  const override = overrides.find(
+    (candidate) =>
+      typeof candidate === "object" &&
+      candidate !== null &&
+      !Array.isArray(candidate) &&
+      (candidate.matcher as JsonObject).options === fieldName,
+  ) as JsonObject | undefined;
+  if (override === undefined) throw new Error(`Missing ${fieldName} override`);
+
+  const properties = override.properties;
+  if (!Array.isArray(properties)) throw new Error(`${fieldName} override must have properties`);
+
+  const linksProperty = properties.find(
+    (candidate) =>
+      typeof candidate === "object" &&
+      candidate !== null &&
+      !Array.isArray(candidate) &&
+      candidate.id === "links",
+  ) as JsonObject | undefined;
+  const links = linksProperty?.value;
+  if (!Array.isArray(links) || links.length === 0) throw new Error(`${fieldName} must have a link`);
+
+  return links[0] as JsonObject;
+};
+
 describe("Agent Run Diagnosis dashboard", () => {
   it("keeps the checked-in dashboard artifact synchronized", () => {
     // Given
@@ -68,5 +99,27 @@ describe("Agent Run Diagnosis dashboard", () => {
     // Then
     expect(query).toContain("&>> { true }");
     expect(query).toContain('span."session.id" = "$agent_run_id"');
+  });
+
+  it("preserves the dashboard time range in trace navigation links", () => {
+    // Given
+    const dashboard = buildAgentRunDiagnosisDashboard();
+    const selectedRunSummary = panelByTitle(dashboard, "Selected Agent Run Summary");
+    const completeTrace = panelByTitle(dashboard, "Complete Trace");
+    const failedOperations = panelByTitle(dashboard, "Failed Model and Tool Operations");
+
+    // When
+    const traceLink = fieldLink(selectedRunSummary, "traceID");
+    const completeTraceSpanLink = fieldLink(completeTrace, "spanID");
+    const failedOperationSpanLink = fieldLink(failedOperations, "spanID");
+
+    // Then
+    expect(traceLink.url).toContain("${__value.raw}");
+    expect(completeTraceSpanLink.url).toContain("${__data.fields.traceIdHidden}");
+    expect(completeTraceSpanLink.url).toContain("${__value.raw}");
+    for (const link of [traceLink, completeTraceSpanLink, failedOperationSpanLink]) {
+      expect(link.url).toContain("${__from}");
+      expect(link.url).toContain("${__to}");
+    }
   });
 });

@@ -57,6 +57,15 @@ const SCHEMA_VERSION = 42;
 
 type TempoTableType = "spans" | "traces";
 
+const GRAFANA_FIELD_VALUE = "${__value.raw}";
+
+const GRAFANA_TRACE_ID_FIELD = "${__data.fields.traceIdHidden}";
+
+const GRAFANA_TIME_RANGE = {
+  from: "${__from}",
+  to: "${__to}",
+} as const;
+
 const tempoDatasource = (): DatasourceReference => ({
   type: EXPECTED_AGENT_RUN_DIAGNOSIS_DATASOURCES.tempo.type,
   uid: EXPECTED_AGENT_RUN_DIAGNOSIS_DATASOURCES.tempo.uid,
@@ -127,7 +136,60 @@ const queryPanelData = (query: DataQueryKind) => ({
   },
 });
 
-const tableVizConfig = (): VizConfigKind => ({
+const traceExploreUrl = ({ spanId, traceId }: { spanId?: string; traceId: string }) => {
+  const pane = {
+    datasource: EXPECTED_AGENT_RUN_DIAGNOSIS_DATASOURCES.tempo.uid,
+    queries: [
+      {
+        query: traceId,
+        queryType: "traceql",
+        datasource: tempoDatasource(),
+        refId: "A",
+        limit: 20,
+        tableType: "traces",
+        metricsQueryType: "range",
+      },
+    ],
+    range: GRAFANA_TIME_RANGE,
+    ...(spanId === undefined ? {} : { panelsState: { trace: { spanId } } }),
+    compact: false,
+  };
+  const variables = [
+    GRAFANA_FIELD_VALUE,
+    GRAFANA_TRACE_ID_FIELD,
+    ...Object.values(GRAFANA_TIME_RANGE),
+  ];
+  const encodedPanes = variables.reduce(
+    (encoded, variable) => encoded.replaceAll(encodeURIComponent(variable), variable),
+    encodeURIComponent(JSON.stringify({ agentRunTrace: pane })),
+  );
+
+  return `/explore?schemaVersion=1&panes=${encodedPanes}`;
+};
+
+const fieldLinkOverride = (
+  fieldName: string,
+  traceLink: { spanId?: string; traceId: string },
+): FieldConfigSource["overrides"][number] => ({
+  matcher: {
+    id: "byName",
+    options: fieldName,
+  },
+  properties: [
+    {
+      id: "links",
+      value: [
+        {
+          title: "Open trace",
+          url: traceExploreUrl(traceLink),
+          targetBlank: false,
+        },
+      ],
+    },
+  ],
+});
+
+const tableVizConfig = (overrides: FieldConfigSource["overrides"] = []): VizConfigKind => ({
   kind: "VizConfig",
   group: "table",
   version: "v1",
@@ -150,10 +212,25 @@ const tableVizConfig = (): VizConfigKind => ({
           inspect: false,
         },
       },
-      overrides: [],
+      overrides,
     },
   },
 });
+
+const traceSummaryVizConfig = () =>
+  tableVizConfig([
+    fieldLinkOverride("traceID", {
+      traceId: GRAFANA_FIELD_VALUE,
+    }),
+  ]);
+
+const spanTableVizConfig = () =>
+  tableVizConfig([
+    fieldLinkOverride("spanID", {
+      traceId: GRAFANA_TRACE_ID_FIELD,
+      spanId: GRAFANA_FIELD_VALUE,
+    }),
+  ]);
 
 const logsVizConfig = (): VizConfigKind => ({
   kind: "VizConfig",
@@ -220,25 +297,25 @@ const agentRunDiagnosisDashboardV2 = (): DashboardV2 => ({
       id: 1,
       title: "Selected Agent Run Summary",
       query: tempoQuery(AGENT_RUN_DIAGNOSIS_QUERIES.selectedRunSummary, "traces"),
-      vizConfig: tableVizConfig(),
+      vizConfig: traceSummaryVizConfig(),
     }),
     completeTrace: panel({
       id: 2,
       title: "Complete Trace",
       query: tempoQuery(AGENT_RUN_DIAGNOSIS_QUERIES.completeTrace, "spans"),
-      vizConfig: tableVizConfig(),
+      vizConfig: spanTableVizConfig(),
     }),
     slowOperations: panel({
       id: 3,
       title: "Slow Model and Tool Operations",
       query: tempoQuery(AGENT_RUN_DIAGNOSIS_QUERIES.slowOperations, "spans"),
-      vizConfig: tableVizConfig(),
+      vizConfig: spanTableVizConfig(),
     }),
     failedOperations: panel({
       id: 4,
       title: "Failed Model and Tool Operations",
       query: tempoQuery(AGENT_RUN_DIAGNOSIS_QUERIES.failedOperations, "spans"),
-      vizConfig: tableVizConfig(),
+      vizConfig: spanTableVizConfig(),
     }),
     correlatedLogs: panel({
       id: 5,
