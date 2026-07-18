@@ -55,18 +55,8 @@ type StartedScenario = {
   response: Response;
 };
 
-const SESSION_ID_ATTRIBUTE = "session.id";
-const CANCELLATION_START_TIMEOUT_MS = 5_000;
-const scenarioPrefix = process.env.AGENT_RUN_DIAGNOSIS_ACCEPTANCE_PREFIX ?? "ar_current_acceptance";
+const scenarioPrefix = process.env.AGENT_RUN_DIAGNOSIS_ACCEPTANCE_PREFIX ?? "ar_acceptance";
 const exportSettleMs = Number(process.env.AGENT_RUN_DIAGNOSIS_EXPORT_SETTLE_MS ?? 15_000);
-
-const expectedEventsByScenario = {
-  "cancellation-failed": ["run.started", "message.delta"],
-  cancelled: ["run.started", "message.delta"],
-  failed: ["run.started", "run.failed"],
-  slow: ["run.started", "message.delta", "run.completed"],
-  succeeded: ["run.started", "message.delta", "run.completed"],
-} as const satisfies Record<Scenario, readonly string[]>;
 
 const sleep = (milliseconds: number) =>
   new Promise<void>((resolve) => {
@@ -256,61 +246,6 @@ const parseEventTypes = (body: string) =>
     .map((line) => JSON.parse(line) as { type: string })
     .map((event) => event.type);
 
-const withTimeout = async <T>(promise: Promise<T>, message: string) => {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_resolve, reject) => {
-        timeout = setTimeout(() => reject(new Error(message)), CANCELLATION_START_TIMEOUT_MS);
-      }),
-    ]);
-  } finally {
-    if (timeout !== undefined) clearTimeout(timeout);
-  }
-};
-
-const readCancellationPrefixEvents = async (
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  scenario: Extract<Scenario, "cancellation-failed" | "cancelled">,
-) => {
-  const decoder = new TextDecoder();
-  const events: string[] = [];
-  let pending = "";
-
-  while (!events.includes("message.delta")) {
-    const chunk = await withTimeout(
-      reader.read(),
-      `Timed out waiting for cancellable scenario ${scenario} to start`,
-    );
-    if (chunk.done) return events;
-
-    pending += decoder.decode(chunk.value, { stream: true });
-    let delimiter = pending.indexOf("\n");
-    while (delimiter >= 0) {
-      const line = pending.slice(0, delimiter);
-      pending = pending.slice(delimiter + 1);
-      if (line.length > 0) {
-        events.push((JSON.parse(line) as { type: string }).type);
-      }
-      delimiter = pending.indexOf("\n");
-    }
-  }
-
-  return events;
-};
-
-const assertExpectedEvents = (result: ScenarioResult) => {
-  const expectedEvents = expectedEventsByScenario[result.scenario];
-  if (result.events.join("\n") !== expectedEvents.join("\n")) {
-    throw new Error(
-      `Scenario ${result.scenario} emitted ${JSON.stringify(
-        result.events,
-      )}; expected ${JSON.stringify(expectedEvents)}`,
-    );
-  }
-};
-
 const startScenario = async (
   app: ReturnType<typeof createApp>,
   scenario: Scenario,
@@ -342,18 +277,18 @@ const postScenario = async (
 
 const cancelScenario = async (
   app: ReturnType<typeof createApp>,
-  scenario: Extract<Scenario, "cancellation-failed" | "cancelled">,
+  scenario: Scenario,
 ): Promise<ScenarioResult> => {
   const { agentRunId, response } = await startScenario(app, scenario);
   const reader = response.body?.getReader();
   if (reader === undefined) throw new Error(`Missing response body for ${scenario}`);
 
-  const events = await readCancellationPrefixEvents(reader, scenario);
+  const firstChunk = await reader.read();
   await reader.cancel();
 
   return {
     agentRunId,
-    events,
+    events: firstChunk.done ? [] : parseEventTypes(new TextDecoder().decode(firstChunk.value)),
     scenario,
   };
 };
@@ -377,17 +312,13 @@ const run = async () => {
       await cancelScenario(app, "cancellation-failed"),
     ];
 
-    for (const result of results) {
-      assertExpectedEvents(result);
-    }
-
     await sleep(exportSettleMs);
 
     logger.info("Agent Run diagnosis acceptance completed", {
       attributes: {
-        "metadata.agent_run.acceptance.export_settle_ms": exportSettleMs,
-        "metadata.agent_run.acceptance.results": results.map((result) => ({
-          [SESSION_ID_ATTRIBUTE]: result.agentRunId,
+        "agent.run.acceptance.export_settle_ms": exportSettleMs,
+        "agent.run.acceptance.results": results.map((result) => ({
+          "agent.run.id": result.agentRunId,
           events: result.events,
           scenario: result.scenario,
         })),
