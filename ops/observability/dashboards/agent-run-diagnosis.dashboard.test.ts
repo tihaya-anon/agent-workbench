@@ -13,14 +13,14 @@ const dashboardPath = path.resolve(import.meta.dirname, "agent-run-diagnosis.das
 
 const currentAgentRunDiagnosisQueries = {
   selectedRunSummary:
-    '{ span:name = "agent.run" && span."agent.run.id" = "$agent_run_id" } | select(span:name, trace:id, span:duration, span."agent.run.outcome", span."error.type")',
-  completeTrace: '{ span:name = "agent.run" && span."agent.run.id" = "$agent_run_id" }',
+    '{ span:name = "agent.run" && span."session.id" = "$agent_run_id" } | select(span:name, trace:id, span:duration, span."metadata.agent_run.outcome", span."error.type")',
+  completeTrace: '{ span:name = "agent.run" && span."session.id" = "$agent_run_id" }',
   slowOperations:
-    '{ span:name = "agent.run" && span."agent.run.id" = "$agent_run_id" } >> { span."langchain.run.kind" =~ "llm|tool" && span:duration > 1s } | select(span:name, trace:id, span:duration, span:status, span."langchain.run.kind", span."langchain.run.name", span."gen_ai.tool.name", span."gen_ai.provider.name", span."gen_ai.request.model", span."gen_ai.response.model", span."gen_ai.usage.input_tokens", span."gen_ai.usage.output_tokens")',
+    '{ span:name = "agent.run" && span."session.id" = "$agent_run_id" } >> { span."openinference.span.kind" =~ "LLM|TOOL" && span:duration > 1s } | select(span:name, trace:id, span:duration, span:status, span."openinference.span.kind", span."graph.node.name", span."tool.name", span."llm.provider", span."llm.model_name", span."llm.token_count.prompt", span."llm.token_count.completion", span."llm.finish_reason")',
   failedOperations:
-    '{ span:name = "agent.run" && span."agent.run.id" = "$agent_run_id" } >> { span."langchain.run.kind" =~ "llm|tool" && span:status = error } | select(span:name, trace:id, span:duration, span:status, span."langchain.run.kind", span."langchain.run.name", span."gen_ai.tool.name", span."gen_ai.provider.name", span."gen_ai.request.model", span."gen_ai.response.model", span."gen_ai.usage.input_tokens", span."gen_ai.usage.output_tokens")',
+    '{ span:name = "agent.run" && span."session.id" = "$agent_run_id" } >> { span."openinference.span.kind" =~ "LLM|TOOL" && span:status = error } | select(span:name, trace:id, span:duration, span:status, span."openinference.span.kind", span."graph.node.name", span."tool.name", span."llm.provider", span."llm.model_name", span."llm.token_count.prompt", span."llm.token_count.completion", span."llm.finish_reason")',
   correlatedLogs:
-    '{service_name="teach-everything-api"} | json | __error__="" | traceId != "" | attributes_agent_run_id != "" | attributes_agent_run_id="$agent_run_id"',
+    '{service_name="teach-everything-api"} | json | __error__="" | traceId != "" | attributes_session_id != "" | attributes_session_id="$agent_run_id"',
 } as const;
 
 const isObject = (value: JsonValue | undefined): value is JsonObject =>

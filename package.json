@@ -22,7 +22,9 @@
     "node": ">=22"
   },
   "devDependencies": {
+    "@arizeai/openinference-semantic-conventions": "2.5.0",
     "@eslint/js": "^10.0.1",
+    "@grafana/grafana-foundation-sdk": "0.0.18",
     "@types/node": "^26.1.1",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",

@@ -1,25 +1,32 @@
+import {
+  OpenInferenceSpanKind,
+  SemanticConventions,
+} from "@arizeai/openinference-semantic-conventions";
+
 export const agentRunIdentifierVariableName = "agent_run_id";
 
 const agentRunIdentifierTemplate = `$${agentRunIdentifierVariableName}`;
 
 const traceQlAttribute = (name: string) => `span."${name}"`;
 
+const agentRunOutcomeAttribute = `${SemanticConventions.METADATA}.agent_run.outcome`;
+
 export const agentRunDiagnosisFields = {
   apiServiceName: "teach-everything-api",
   rootSpanName: "agent.run",
-  runIdSpanAttribute: traceQlAttribute("agent.run.id"),
-  runOutcomeSpanAttribute: traceQlAttribute("agent.run.outcome"),
+  runIdSpanAttribute: traceQlAttribute(SemanticConventions.SESSION_ID),
+  runOutcomeSpanAttribute: traceQlAttribute(agentRunOutcomeAttribute),
   errorTypeSpanAttribute: traceQlAttribute("error.type"),
-  langChainRunKindSpanAttribute: traceQlAttribute("langchain.run.kind"),
-  langChainRunNameSpanAttribute: traceQlAttribute("langchain.run.name"),
-  toolNameSpanAttribute: traceQlAttribute("gen_ai.tool.name"),
-  providerNameSpanAttribute: traceQlAttribute("gen_ai.provider.name"),
-  requestModelSpanAttribute: traceQlAttribute("gen_ai.request.model"),
-  responseModelSpanAttribute: traceQlAttribute("gen_ai.response.model"),
-  inputTokensSpanAttribute: traceQlAttribute("gen_ai.usage.input_tokens"),
-  outputTokensSpanAttribute: traceQlAttribute("gen_ai.usage.output_tokens"),
+  operationKindSpanAttribute: traceQlAttribute(SemanticConventions.OPENINFERENCE_SPAN_KIND),
+  graphNodeNameSpanAttribute: traceQlAttribute(SemanticConventions.GRAPH_NODE_NAME),
+  toolNameSpanAttribute: traceQlAttribute(SemanticConventions.TOOL_NAME),
+  providerNameSpanAttribute: traceQlAttribute(SemanticConventions.LLM_PROVIDER),
+  modelNameSpanAttribute: traceQlAttribute(SemanticConventions.LLM_MODEL_NAME),
+  inputTokensSpanAttribute: traceQlAttribute(SemanticConventions.LLM_TOKEN_COUNT_PROMPT),
+  outputTokensSpanAttribute: traceQlAttribute(SemanticConventions.LLM_TOKEN_COUNT_COMPLETION),
+  finishReasonSpanAttribute: traceQlAttribute(SemanticConventions.LLM_FINISH_REASON),
   logTraceIdField: "traceId",
-  logAgentRunIdField: "attributes_agent_run_id",
+  logAgentRunIdField: "attributes_session_id",
 } as const;
 
 export const expectedAgentRunDiagnosisDatasources = {
@@ -40,20 +47,20 @@ const operationFields = [
   "trace:id",
   "span:duration",
   "span:status",
-  agentRunDiagnosisFields.langChainRunKindSpanAttribute,
-  agentRunDiagnosisFields.langChainRunNameSpanAttribute,
+  agentRunDiagnosisFields.operationKindSpanAttribute,
+  agentRunDiagnosisFields.graphNodeNameSpanAttribute,
   agentRunDiagnosisFields.toolNameSpanAttribute,
   agentRunDiagnosisFields.providerNameSpanAttribute,
-  agentRunDiagnosisFields.requestModelSpanAttribute,
-  agentRunDiagnosisFields.responseModelSpanAttribute,
+  agentRunDiagnosisFields.modelNameSpanAttribute,
   agentRunDiagnosisFields.inputTokensSpanAttribute,
   agentRunDiagnosisFields.outputTokensSpanAttribute,
+  agentRunDiagnosisFields.finishReasonSpanAttribute,
 ];
 
 const select = (fields: readonly string[]) => `select(${fields.join(", ")})`;
 
 const childOperationQuery = (condition: string) =>
-  `${selectedRunRootSpan} >> { ${agentRunDiagnosisFields.langChainRunKindSpanAttribute} =~ "llm|tool" && ${condition} } | ${select(operationFields)}`;
+  `${selectedRunRootSpan} >> { ${agentRunDiagnosisFields.operationKindSpanAttribute} =~ "${OpenInferenceSpanKind.LLM}|${OpenInferenceSpanKind.TOOL}" && ${condition} } | ${select(operationFields)}`;
 
 export const agentRunDiagnosisQueries = {
   selectedRunSummary: `${selectedRunRootSpan} | ${select([

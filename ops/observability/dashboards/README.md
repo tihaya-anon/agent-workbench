@@ -10,6 +10,8 @@ Do not store credentials, private keys, access tokens, or environment-specific s
 
 `agent-run-diagnosis.dashboard.json` is the Grafana/Git Sync runtime artifact. Its
 authoring source is the TypeScript dashboard and query modules in this directory.
+Dashboard rendering uses the pinned Grafana Foundation SDK behind this
+observability-dashboard seam.
 
 Regenerate the committed artifact after intentional dashboard changes:
 

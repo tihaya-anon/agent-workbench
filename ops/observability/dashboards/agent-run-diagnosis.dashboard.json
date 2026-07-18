@@ -1,203 +1,174 @@
 {
-  "uid": "agent-run-diagnosis",
-  "title": "Agent Run Diagnosis",
-  "description": "Diagnose one Teach Everything Agent Run from its opaque Agent Run Identifier.",
-  "tags": ["teach-everything", "agent-run-diagnosis"],
   "timezone": "browser",
-  "schemaVersion": 41,
-  "version": 1,
-  "refresh": "",
+  "editable": true,
+  "graphTooltip": 0,
+  "fiscalYearStartMonth": 0,
+  "schemaVersion": 42,
   "templating": {
     "list": [
       {
-        "name": "agent_run_id",
-        "label": "Agent Run Identifier",
         "type": "textbox",
+        "name": "agent_run_id",
+        "skipUrlSync": false,
+        "multi": false,
+        "allowCustomValue": true,
+        "includeAll": false,
+        "auto": false,
+        "auto_min": "10s",
+        "auto_count": 30,
+        "label": "Agent Run Identifier",
         "query": "",
         "current": { "text": "", "value": "" },
         "hide": 0
       }
     ]
   },
+  "annotations": {},
+  "title": "Agent Run Diagnosis",
+  "uid": "agent-run-diagnosis",
+  "description": "Diagnose one Teach Everything Agent Run from its opaque Agent Run Identifier.",
+  "tags": ["teach-everything", "agent-run-diagnosis"],
+  "version": 1,
+  "refresh": "",
   "panels": [
     {
-      "id": 1,
       "type": "table",
+      "transparent": false,
+      "repeatDirection": "h",
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "showTypeIcons": false,
+        "footer": { "show": false, "reducer": [], "countRows": false },
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "inspect": false } },
+        "overrides": []
+      },
+      "id": 1,
       "title": "Selected Agent Run Summary",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
       "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
         {
+          "filters": [],
           "refId": "A",
           "datasource": { "type": "tempo", "uid": "tempo" },
           "queryType": "traceql",
-          "query": "{ span:name = \"agent.run\" && span.\"agent.run.id\" = \"$agent_run_id\" } | select(span:name, trace:id, span:duration, span.\"agent.run.outcome\", span.\"error.type\")",
+          "query": "{ span:name = \"agent.run\" && span.\"session.id\" = \"$agent_run_id\" } | select(span:name, trace:id, span:duration, span.\"metadata.agent_run.outcome\", span.\"error.type\")",
           "limit": 20
         }
-      ],
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false,
-          "reducer": ["sum"],
-          "countRows": false,
-          "fields": ""
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": { "type": "auto" },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          }
-        },
-        "overrides": []
-      }
+      ]
     },
     {
-      "id": 2,
       "type": "traces",
+      "transparent": false,
+      "repeatDirection": "h",
+      "id": 2,
       "title": "Complete Trace",
       "gridPos": { "h": 9, "w": 24, "x": 0, "y": 8 },
       "datasource": { "type": "tempo", "uid": "tempo" },
+      "options": {},
+      "fieldConfig": { "defaults": {}, "overrides": [] },
       "targets": [
         {
+          "filters": [],
           "refId": "A",
           "datasource": { "type": "tempo", "uid": "tempo" },
           "queryType": "traceql",
-          "query": "{ span:name = \"agent.run\" && span.\"agent.run.id\" = \"$agent_run_id\" }",
+          "query": "{ span:name = \"agent.run\" && span.\"session.id\" = \"$agent_run_id\" }",
           "limit": 20
         }
-      ],
-      "options": {},
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": { "type": "auto" },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          }
-        },
-        "overrides": []
-      }
+      ]
     },
     {
-      "id": 3,
       "type": "table",
+      "transparent": false,
+      "repeatDirection": "h",
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "showTypeIcons": false,
+        "footer": { "show": false, "reducer": [], "countRows": false },
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "inspect": false } },
+        "overrides": []
+      },
+      "id": 3,
       "title": "Slow Model and Tool Operations",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
       "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
         {
+          "filters": [],
           "refId": "A",
           "datasource": { "type": "tempo", "uid": "tempo" },
           "queryType": "traceql",
-          "query": "{ span:name = \"agent.run\" && span.\"agent.run.id\" = \"$agent_run_id\" } >> { span.\"langchain.run.kind\" =~ \"llm|tool\" && span:duration > 1s } | select(span:name, trace:id, span:duration, span:status, span.\"langchain.run.kind\", span.\"langchain.run.name\", span.\"gen_ai.tool.name\", span.\"gen_ai.provider.name\", span.\"gen_ai.request.model\", span.\"gen_ai.response.model\", span.\"gen_ai.usage.input_tokens\", span.\"gen_ai.usage.output_tokens\")",
+          "query": "{ span:name = \"agent.run\" && span.\"session.id\" = \"$agent_run_id\" } >> { span.\"openinference.span.kind\" =~ \"LLM|TOOL\" && span:duration > 1s } | select(span:name, trace:id, span:duration, span:status, span.\"openinference.span.kind\", span.\"graph.node.name\", span.\"tool.name\", span.\"llm.provider\", span.\"llm.model_name\", span.\"llm.token_count.prompt\", span.\"llm.token_count.completion\", span.\"llm.finish_reason\")",
           "limit": 20
         }
-      ],
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false,
-          "reducer": ["sum"],
-          "countRows": false,
-          "fields": ""
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": { "type": "auto" },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          }
-        },
-        "overrides": []
-      }
+      ]
     },
     {
-      "id": 4,
       "type": "table",
+      "transparent": false,
+      "repeatDirection": "h",
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "showTypeIcons": false,
+        "footer": { "show": false, "reducer": [], "countRows": false },
+        "cellHeight": "sm"
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "inspect": false } },
+        "overrides": []
+      },
+      "id": 4,
       "title": "Failed Model and Tool Operations",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 27 },
       "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
         {
+          "filters": [],
           "refId": "A",
           "datasource": { "type": "tempo", "uid": "tempo" },
           "queryType": "traceql",
-          "query": "{ span:name = \"agent.run\" && span.\"agent.run.id\" = \"$agent_run_id\" } >> { span.\"langchain.run.kind\" =~ \"llm|tool\" && span:status = error } | select(span:name, trace:id, span:duration, span:status, span.\"langchain.run.kind\", span.\"langchain.run.name\", span.\"gen_ai.tool.name\", span.\"gen_ai.provider.name\", span.\"gen_ai.request.model\", span.\"gen_ai.response.model\", span.\"gen_ai.usage.input_tokens\", span.\"gen_ai.usage.output_tokens\")",
+          "query": "{ span:name = \"agent.run\" && span.\"session.id\" = \"$agent_run_id\" } >> { span.\"openinference.span.kind\" =~ \"LLM|TOOL\" && span:status = error } | select(span:name, trace:id, span:duration, span:status, span.\"openinference.span.kind\", span.\"graph.node.name\", span.\"tool.name\", span.\"llm.provider\", span.\"llm.model_name\", span.\"llm.token_count.prompt\", span.\"llm.token_count.completion\", span.\"llm.finish_reason\")",
           "limit": 20
         }
-      ],
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false,
-          "reducer": ["sum"],
-          "countRows": false,
-          "fields": ""
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": { "type": "auto" },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          }
-        },
-        "overrides": []
-      }
+      ]
     },
     {
-      "id": 5,
       "type": "logs",
+      "transparent": false,
+      "repeatDirection": "h",
+      "options": {
+        "showLabels": false,
+        "showCommonLabels": false,
+        "showTime": true,
+        "showLogContextToggle": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      },
+      "id": 5,
       "title": "Correlated Agent Run Logs",
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 37 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
+          "expr": "{service_name=\"teach-everything-api\"} | json | __error__=\"\" | traceId != \"\" | attributes_session_id != \"\" | attributes_session_id=\"$agent_run_id\"",
           "refId": "A",
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "{service_name=\"teach-everything-api\"} | json | __error__=\"\" | traceId != \"\" | attributes_agent_run_id != \"\" | attributes_agent_run_id=\"$agent_run_id\"",
           "queryType": "range"
         }
-      ],
-      "options": {
-        "showTime": true,
-        "showLabels": false,
-        "showCommonLabels": false,
-        "wrapLogMessage": true,
-        "prettifyLogMessage": true,
-        "enableLogDetails": true,
-        "dedupStrategy": "none"
-      }
+      ]
     }
   ]
 }

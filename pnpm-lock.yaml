@@ -8,9 +8,15 @@ importers:
 
   .:
     devDependencies:
+      '@arizeai/openinference-semantic-conventions':
+        specifier: 2.5.0
+        version: 2.5.0
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.7.0(jiti@2.7.0))
+      '@grafana/grafana-foundation-sdk':
+        specifier: 0.0.18
+        version: 0.0.18
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
@@ -1169,6 +1175,9 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@grafana/grafana-foundation-sdk@0.0.18':
+    resolution: {integrity: sha512-cxJw+VXHNQGbR6x76FiNxJBR2XUrElHHXEV3jOb/oVDEhajYm3VxpfPCzeOIcHiNfRvLgVVsEtBje3yW4+Tiew==}
 
   '@grpc/grpc-js@1.14.4':
     resolution: {integrity: sha512-k9Dj3DV/itK9D06Y8f190Qgop7/Ui+D0njFV3LHMPwPT75DpXLQohE9Wmz0QElrJnzsjB7KPWiKJbOl7IPDArQ==}
@@ -5549,6 +5558,10 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
 
   '@floating-ui/utils@0.2.12': {}
+
+  '@grafana/grafana-foundation-sdk@0.0.18':
+    dependencies:
+      tslib: 2.8.1
 
   '@grpc/grpc-js@1.14.4':
     dependencies:
