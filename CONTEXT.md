@@ -53,9 +53,21 @@ Metadata emitted about an Agent Run for diagnosis, including identifiers, timing
 _Avoid_: Run content, debug payload
 
 **Agent Graph Spec**:
-A versioned declarative description of an agent graph's topology and configurable behavior, including node kinds, edges, routing conditions, model settings, tool references, and prompt references. It is the artifact promoted between experiments and production; executable adapters live in the runtime that consumes it.
+A deferred implementation-neutral artifact for describing agent graph topology and behavior across authoring languages. It is not the near-term production artifact while graph behavior is still defined by TypeScript LangGraph factories.
 _Avoid_: LangGraph snapshot, compiled graph, business code
 
-**Graph Spec Hash**:
-A stable content-derived identifier for one exact Agent Graph Spec and its referenced behavior inputs. It is the canonical key for reproducing, comparing, and promoting graph behavior across trials and Agent Runs.
-_Avoid_: Graph version, trace ID, run ID
+**Graph Factory**:
+A TypeScript module or exported function that builds a LangGraph agent graph for a named experiment or runtime behavior. It is the near-term artifact selected by trial orchestration and executed by the TypeScript runtime.
+_Avoid_: Graph config, serialized graph, graph schema
+
+**Source Revision**:
+The clean Git commit SHA for the repository state that supplied graph, state, action, prompt, tool, and runtime code for an Agent Run. It is a convenient checkout locator for engineers, not the full identity of agent behavior.
+_Avoid_: Graph Spec Hash, trace ID, run ID
+
+**Agent Behavior Version**:
+A structured version tuple identifying the effective behavior of an Agent Run across graph, state, action, prompt, tool, model, trial parameter, and source revision dimensions. Every dimension must resolve before runtime; unresolved, missing, `none`, or `unknown` values are invalid and should be rejected before execution and surfaced as telemetry errors.
+_Avoid_: Single behavior hash, graph version, source revision
+
+**Runtime Profile**:
+A versioned, validated startup policy document that selects runtime enforcement behavior such as strict Agent Behavior Version validation, ad hoc run allowance, and clean Source Revision requirements. It is the auditable source of runtime policy; environment variables or CLI flags may select the profile file but should not define the policy inline.
+_Avoid_: Environment mode, feature flag, deployment config
