@@ -39,6 +39,9 @@ approval_mode = "approve"
 [mcp_servers.playwright.tools.browser_navigate]
 approval_mode = "approve"
 
+[mcp_servers.playwright.tools.browser_navigate_back]
+approval_mode = "approve"
+
 [mcp_servers.grafana]
 command = "uvx"
 args = ["mcp-grafana"]
