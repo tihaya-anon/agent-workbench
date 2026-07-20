@@ -99,6 +99,33 @@ pnpm --filter @teach-everything/shared schema:agent-run-worker
 The shared package tests compare the artifacts against the generator output so stale files are
 caught before commit.
 
+## Compatibility Policy
+
+`AGENT_RUN_WORKER_PROTOCOL_VERSION` is the compatibility signal for the TS gateway and Python
+worker. Both sides must reject unsupported protocol versions before graph execution.
+
+Version `1` is compatible when:
+
+- Existing command and event types keep the same required fields and meanings.
+- New optional fields are safe for older consumers to ignore.
+- New worker event types are either explicitly translated by the TS API adapter or rejected before
+  they reach the frontend stream.
+- Error classifications keep their existing meanings.
+- `progress.update` remains product-safe and does not carry raw LangGraph chunks.
+
+Bump `AGENT_RUN_WORKER_PROTOCOL_VERSION` for incompatible changes, including:
+
+- Removing or renaming a command, event type, or required field.
+- Changing the meaning of an existing field.
+- Changing terminal event semantics.
+- Requiring frontend-visible behavior that older TS gateways cannot translate.
+- Changing Runtime Profile or Agent Behavior Version enforcement in a way that changes acceptance
+  of previously valid `run.start` commands.
+
+Until #19 adds a concrete adapter handshake, compatibility is checked per message by strict schema
+validation. The first unsupported command or worker event should fail the run with a sanitized
+`run.failed` event rather than leaking worker internals.
+
 ## Migration Order
 
 1. Define and test this shared protocol in this repository.
