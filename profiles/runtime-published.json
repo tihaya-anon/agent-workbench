@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "profileId": "runtime-published",
+  "runtimePolicy": {
+    "agentBehaviorVersion": {
+      "policy": "strict",
+      "requireCompleteDimensions": true,
+      "rejectUnresolvedDimensions": true,
+      "allowIncompleteAdHocRuns": false
+    },
+    "sourceRevision": {
+      "requireCleanForPublishedGraphVersions": true
+    }
+  }
+}
