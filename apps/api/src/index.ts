@@ -3,17 +3,23 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app";
 import { DEFAULT_DEVELOPMENT_AGENT_BEHAVIOR_VERSION } from "./agent-run-behavior";
 import { logger } from "./logger";
+import { createPythonWorkerAgentRunExecutor } from "./python-worker-agent-run-executor";
 import { loadPythonWorkerDiscoveryForStartup } from "./python-worker-discovery";
 import { loadRuntimeProfileForStartup } from "./runtime-profile-config";
 
 const port = Number(process.env.PORT ?? 3000);
 const runtimeProfile = loadRuntimeProfileForStartup();
 const pythonWorkerDiscovery = loadPythonWorkerDiscoveryForStartup();
+const agentRunExecutor =
+  pythonWorkerDiscovery === undefined
+    ? undefined
+    : createPythonWorkerAgentRunExecutor({ discovery: pythonWorkerDiscovery });
 const app = createApp({
   agentBehaviorVersionAcceptance: {
     agentBehaviorVersion: DEFAULT_DEVELOPMENT_AGENT_BEHAVIOR_VERSION,
     runtimeProfile,
   },
+  ...(agentRunExecutor === undefined ? {} : { agentRunExecutor }),
 });
 
 const server = serve({ fetch: app.fetch, port }, (info) => {

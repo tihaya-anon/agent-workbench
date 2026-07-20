@@ -1,7 +1,10 @@
 import type {
+  AgentBehaviorVersion,
   AgentRunErrorClassification,
   AgentRunExecutorEvent,
   AgentRunRequest,
+  DevelopmentAgentBehaviorVersion,
+  RuntimeProfile,
 } from "@teach-everything/shared";
 
 export class AgentRunExecutionError extends Error {
@@ -14,7 +17,17 @@ export class AgentRunExecutionError extends Error {
   }
 }
 
+export type AgentRunExecutorContext = {
+  readonly agentBehaviorVersion: AgentBehaviorVersion | DevelopmentAgentBehaviorVersion;
+  readonly agentRunId: string;
+  readonly runtimeProfile: RuntimeProfile;
+};
+
 // Executors expose streamable domain events instead of UI-specific response shapes.
 export interface AgentRunExecutor {
-  execute(input: AgentRunRequest, signal: AbortSignal): AsyncIterable<AgentRunExecutorEvent>;
+  execute(
+    input: AgentRunRequest,
+    signal: AbortSignal,
+    context: AgentRunExecutorContext,
+  ): AsyncIterable<AgentRunExecutorEvent>;
 }

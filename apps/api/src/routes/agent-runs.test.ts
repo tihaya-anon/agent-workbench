@@ -10,9 +10,13 @@ import type {
   AgentRunTelemetryScope,
   AgentRunTerminalOutcome,
 } from "@teach-everything/observability";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import developmentProfileDocument from "../../../../profiles/runtime-development.json";
 import { createApp } from "../app";
+import { createPythonWorkerAgentRunExecutor } from "../python-worker-agent-run-executor";
 import { createAgentRunResponse } from "./agent-runs";
 
 const developmentRuntimeProfile = runtimeProfileSchema.parse(developmentProfileDocument);
@@ -104,6 +108,20 @@ const startEphemeralApi = (api: ReturnType<typeof createApp>) =>
       });
     });
   });
+
+const createPythonWorkerExecutorForScript = (script: string) => {
+  const directory = mkdtempSync(join(tmpdir(), "python-worker-route-"));
+  const scriptPath = join(directory, "worker.mjs");
+  writeFileSync(scriptPath, script);
+
+  return createPythonWorkerAgentRunExecutor({
+    discovery: {
+      command: [process.execPath, scriptPath],
+      environment: { PYTHONPATH: "" },
+      workerRepoPath: directory,
+    },
+  });
+};
 
 const controlledCancellationExecutor = () => {
   let abortEvents = 0;
@@ -246,6 +264,42 @@ describe("POST /api/agent-runs", () => {
       { version: 1, type: "run.started", agentRunId: "ar_test_01" },
       { version: 1, type: "message.delta", text: "Closures retain their scope. " },
       { version: 1, type: "message.delta", text: "That is lexical scoping." },
+      { version: 1, type: "run.completed" },
+    ]);
+  });
+
+  it("runs the Agent Run route through the Python worker adapter", async () => {
+    // Given
+    const api = createApp({
+      agentRunExecutor: createPythonWorkerExecutorForScript(`
+        import { createInterface } from "node:readline";
+        const lines = createInterface({ input: process.stdin, crlfDelay: Infinity });
+        for await (const line of lines) {
+          const command = JSON.parse(line);
+          if (command.type !== "run.start") continue;
+          console.log(JSON.stringify({ version: 1, type: "run.started", agentRunId: command.agentRunId }));
+          console.log(JSON.stringify({ version: 1, type: "message.delta", text: command.input.message }));
+          console.log(JSON.stringify({ version: 1, type: "run.completed" }));
+        }
+      `),
+      createAgentRunId: () => "ar_python_route",
+    });
+    const request = new Request("http://localhost/api/agent-runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Run through worker adapter." }),
+    });
+
+    // When
+    const response = await api.request(request);
+    const body = await response.text();
+
+    // Then
+    expect(response.status).toBe(200);
+    expect(response.headers.get("X-Agent-Run-Id")).toBe("ar_python_route");
+    expect(decodeAgentRunEvents(body)).toEqual([
+      { version: 1, type: "run.started", agentRunId: "ar_python_route" },
+      { version: 1, type: "message.delta", text: "Run through worker adapter." },
       { version: 1, type: "run.completed" },
     ]);
   });

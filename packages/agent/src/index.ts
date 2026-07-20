@@ -1,4 +1,8 @@
-export { AgentRunExecutionError, type AgentRunExecutor } from "./agent-run-executor";
+export {
+  AgentRunExecutionError,
+  type AgentRunExecutor,
+  type AgentRunExecutorContext,
+} from "./agent-run-executor";
 export type { GraphFactoryRuntimeRequest } from "@teach-everything/shared";
 export {
   parseGraphFactoryRuntimeRequestJson,

@@ -249,7 +249,11 @@ export const createAgentRunLifecycle = ({
         if (signal.aborted || cancellationRequestedBeforeStart) requestExecutorCancellation();
 
         iterator = agentRunExecutor
-          .execute(input, executorCancellation.signal)
+          .execute(input, executorCancellation.signal, {
+            agentBehaviorVersion: behaviorVersionAcceptance.acceptedTelemetry.agentBehaviorVersion,
+            agentRunId,
+            runtimeProfile: agentBehaviorVersionAcceptance.runtimeProfile,
+          })
           [Symbol.asyncIterator]();
 
         while (!terminal) {
