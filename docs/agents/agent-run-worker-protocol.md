@@ -3,6 +3,7 @@
 The Agent Run worker protocol is the language-neutral seam between this TypeScript repository and
 an external LangGraph runtime worker. This repository owns the shared contract and browser-facing
 Agent Run stream. A Python runtime repository owns LangGraph execution and experiment tooling.
+The selected Python runtime repository is `tihaya-anon/agent-runtime-python`.
 
 The initial transport is NDJSON over worker stdio. Each line is one complete JSON object, encoded
 without embedded record delimiters. The protocol version is `1`.
@@ -75,8 +76,8 @@ OpenInference telemetry, not in the browser-facing product protocol.
 
 - This repository owns `packages/shared/src/schemas/agent-run-worker.ts`, the TS API gateway, and
   frontend stream stability.
-- The Python runtime repository owns graph execution, Python LangGraph stream interpretation, and
-  experiment performance.
+- `tihaya-anon/agent-runtime-python` owns graph execution, Python LangGraph stream interpretation,
+  and experiment performance.
 - Shared protocol changes should start in this repository, then be consumed by the Python runtime
   repository through an explicit schema publication or vendoring path.
 
