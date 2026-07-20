@@ -40,7 +40,7 @@ export interface PublishableGraphFactoryCatalog<TrialParameters, Graph> {
   createGraph: (identity: string, version: string, trialParameters: TrialParameters) => Graph;
 }
 
-export interface PublishableGraphFactoryRuntime<TrialParameters, Graph> {
+export interface PublishableGraphFactoryRuntime<Graph> {
   createGraphForTrial: (request: unknown) => Graph;
 }
 
@@ -158,7 +158,7 @@ export const createPublishableGraphFactoryRuntime = <TrialParameters, Graph>(
         parsedRequest.trialParameters,
       );
     },
-  }) satisfies PublishableGraphFactoryRuntime<TrialParameters, Graph>;
+  }) satisfies PublishableGraphFactoryRuntime<Graph>;
 
 export const registerPublishableGraphFactoryVersion = <TrialParameters, Graph>({
   graphFactory,
