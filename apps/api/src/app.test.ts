@@ -46,7 +46,10 @@ describe("POST /api/agent-runs", () => {
         },
       });
 
-    // When / Then
-    expect(createAppWithMalformedProfile).toThrow();
+    // When
+    const createAppWithMalformedProfileAction = createAppWithMalformedProfile;
+
+    // Then
+    expect(createAppWithMalformedProfileAction).toThrow();
   });
 });

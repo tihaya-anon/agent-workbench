@@ -2,6 +2,7 @@ import {
   strictAgentBehaviorVersionSchema,
   type AgentBehaviorVersion,
   type DevelopmentAgentBehaviorVersion,
+  type AgentRunRequest,
   type RuntimeProfile,
   type StrictAgentBehaviorVersion,
   runtimeProfileSchema,
@@ -18,6 +19,14 @@ export type AgentBehaviorVersionAcceptanceInput = {
   agentBehaviorVersion: unknown;
   runtimeProfile: RuntimeProfile;
 };
+
+export type AgentBehaviorVersionAcceptanceConfigResolver = (
+  input: AgentRunRequest,
+) => AgentBehaviorVersionAcceptanceConfig;
+
+export type AgentBehaviorVersionAcceptanceResolver = (
+  input: AgentRunRequest,
+) => AgentBehaviorVersionAcceptanceInput;
 
 type AgentBehaviorVersionAccepted = {
   acceptedTelemetry: AgentRunAcceptedTelemetry;
@@ -43,6 +52,23 @@ export const validateAgentBehaviorVersionAcceptanceConfig = ({
   agentBehaviorVersion,
   runtimeProfile: runtimeProfileSchema.parse(runtimeProfile),
 });
+
+export const createStaticAgentBehaviorVersionAcceptanceResolver = (
+  agentBehaviorVersionAcceptance: AgentBehaviorVersionAcceptanceConfig,
+): AgentBehaviorVersionAcceptanceResolver => {
+  const validatedAgentBehaviorVersionAcceptance = validateAgentBehaviorVersionAcceptanceConfig(
+    agentBehaviorVersionAcceptance,
+  );
+
+  return () => validatedAgentBehaviorVersionAcceptance;
+};
+
+export const createAgentBehaviorVersionAcceptanceResolver =
+  (
+    resolveAgentBehaviorVersionAcceptance: AgentBehaviorVersionAcceptanceConfigResolver,
+  ): AgentBehaviorVersionAcceptanceResolver =>
+  (input) =>
+    validateAgentBehaviorVersionAcceptanceConfig(resolveAgentBehaviorVersionAcceptance(input));
 
 const isCompleteBehaviorVersion = (
   behaviorVersion: DevelopmentAgentBehaviorVersion,

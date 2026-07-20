@@ -2,7 +2,10 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { runtimeProfileSchema } from "@teach-everything/shared";
 import { describe, expect, it } from "vitest";
+import developmentProfileDocument from "../../../profiles/runtime-development.json";
+import publishedProfileDocument from "../../../profiles/runtime-published.json";
 import {
   createAgentGraphFactory,
   createPublishableGraphFactoryCatalog,
@@ -19,6 +22,9 @@ const baselineBehaviorInputs = {
   model: "model:openai:gpt-5:2026-07-20",
   trialParameter: "trial-parameter:baseline:v1",
 } as const;
+
+const developmentRuntimeProfile = runtimeProfileSchema.parse(developmentProfileDocument);
+const publishedRuntimeProfile = runtimeProfileSchema.parse(publishedProfileDocument);
 
 const createGraphFactory = (
   identity: string,
@@ -83,6 +89,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
     const result = registerInRepository(repositoryPath, {
       graphFactory,
       behaviorVersionInputs: baselineBehaviorInputs,
+      runtimeProfile: publishedRuntimeProfile,
     });
 
     // Then
@@ -113,12 +120,35 @@ describe("registerPublishableGraphFactoryVersion", () => {
       registerInRepository(repositoryPath, {
         graphFactory,
         behaviorVersionInputs: baselineBehaviorInputs,
+        runtimeProfile: publishedRuntimeProfile,
       });
 
     // Then
     expect(registerDirtySourceRevision).toThrow(
       "Cannot register a publishable Graph Factory version from a dirty worktree",
     );
+  });
+
+  it("allows dirty source when the Runtime Profile does not require clean published registration", () => {
+    // Given
+    const repositoryPath = createTemporaryGitRepository();
+    const graphFactory = createGraphFactory("graph-factory:teaching-assistant", "v1");
+    const expectedCommitSha = getCurrentCommitSha(repositoryPath);
+    writeFileSync(join(repositoryPath, "tracked.txt"), "modified\n");
+
+    // When
+    const result = registerInRepository(repositoryPath, {
+      graphFactory,
+      behaviorVersionInputs: baselineBehaviorInputs,
+      runtimeProfile: developmentRuntimeProfile,
+    });
+
+    // Then
+    expect(result.sourceRevision).toEqual({
+      commitSha: expectedCommitSha,
+      worktreeState: "dirty",
+    });
+    expect(result.behaviorVersion.sourceRevision).toBe(expectedCommitSha);
   });
 
   it("rejects incomplete behavior-version inputs", () => {
@@ -138,6 +168,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
       registerInRepository(repositoryPath, {
         graphFactory,
         behaviorVersionInputs: incompleteBehaviorInputs,
+        runtimeProfile: publishedRuntimeProfile,
       });
 
     // Then
@@ -157,10 +188,12 @@ describe("registerPublishableGraphFactoryVersion", () => {
     const tutorRegistration = registerInRepository(repositoryPath, {
       graphFactory: tutorGraphFactory,
       behaviorVersionInputs: baselineBehaviorInputs,
+      runtimeProfile: publishedRuntimeProfile,
     });
     const assessorRegistration = registerInRepository(repositoryPath, {
       graphFactory: assessorGraphFactory,
       behaviorVersionInputs: baselineBehaviorInputs,
+      runtimeProfile: publishedRuntimeProfile,
     });
 
     // Then
@@ -186,6 +219,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
         ...baselineBehaviorInputs,
         trialParameter: "trial-parameter:baseline:v1",
       },
+      runtimeProfile: publishedRuntimeProfile,
     });
     const variantRegistration = registerInRepository(repositoryPath, {
       graphFactory,
@@ -193,6 +227,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
         ...baselineBehaviorInputs,
         trialParameter: "trial-parameter:variant:v2",
       },
+      runtimeProfile: publishedRuntimeProfile,
     });
 
     // Then
@@ -253,6 +288,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
     const result = registerInRepository(repositoryPath, {
       graphFactory,
       behaviorVersionInputs: baselineBehaviorInputs,
+      runtimeProfile: publishedRuntimeProfile,
     });
 
     // Then

@@ -10,9 +10,11 @@ import { HTTPException } from "hono/http-exception";
 import type { BlankEnv, ExtractSchema } from "hono/types";
 import developmentProfileDocument from "../../../profiles/runtime-development.json";
 import {
+  createAgentBehaviorVersionAcceptanceResolver,
   DEFAULT_DEVELOPMENT_AGENT_BEHAVIOR_VERSION,
-  validateAgentBehaviorVersionAcceptanceConfig,
+  createStaticAgentBehaviorVersionAcceptanceResolver,
   type AgentBehaviorVersionAcceptanceConfig,
+  type AgentBehaviorVersionAcceptanceConfigResolver,
 } from "./agent-run-behavior";
 import { logger as defaultLogger } from "./logger";
 import { invalidAgentRunRequestResponse, registerAgentRunRoutes } from "./routes/agent-runs";
@@ -28,6 +30,7 @@ export interface CreateAppOptions {
   agentRunExecutor?: AgentRunExecutor;
   createAgentRunId?: () => string;
   logger?: Logger;
+  resolveAgentBehaviorVersionAcceptance?: AgentBehaviorVersionAcceptanceConfigResolver;
 }
 
 export const createApp = ({
@@ -35,10 +38,12 @@ export const createApp = ({
   agentRunExecutor,
   createAgentRunId = crypto.randomUUID,
   logger = defaultLogger,
+  resolveAgentBehaviorVersionAcceptance,
 }: CreateAppOptions = {}) => {
-  const validatedAgentBehaviorVersionAcceptance = validateAgentBehaviorVersionAcceptanceConfig(
-    agentBehaviorVersionAcceptance,
-  );
+  const agentBehaviorVersionAcceptanceResolver =
+    resolveAgentBehaviorVersionAcceptance === undefined
+      ? createStaticAgentBehaviorVersionAcceptanceResolver(agentBehaviorVersionAcceptance)
+      : createAgentBehaviorVersionAcceptanceResolver(resolveAgentBehaviorVersionAcceptance);
   const baseApp = new Hono();
   const agentRunTelemetry: AgentRunTelemetry = createAgentRunTelemetry({ logger });
 
@@ -86,7 +91,7 @@ export const createApp = ({
 
   if (agentRunExecutor) {
     return registerAgentRunRoutes(appWithHealthRoute, {
-      agentBehaviorVersionAcceptance: validatedAgentBehaviorVersionAcceptance,
+      agentBehaviorVersionAcceptanceResolver,
       agentRunExecutor,
       agentRunTelemetry,
       createAgentRunId,

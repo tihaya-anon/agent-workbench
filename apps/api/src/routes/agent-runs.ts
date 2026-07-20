@@ -11,11 +11,11 @@ import {
 import type { Context } from "hono";
 import type { HonoBase } from "hono/hono-base";
 import { validator } from "hono/validator";
-import type { AgentBehaviorVersionAcceptanceInput } from "../agent-run-behavior";
+import type { AgentBehaviorVersionAcceptanceResolver } from "../agent-run-behavior";
 import { createAgentRunLifecycle } from "../agent-run-lifecycle";
 
 export type CreateAgentRunResponseOptions = {
-  agentBehaviorVersionAcceptance: AgentBehaviorVersionAcceptanceInput;
+  agentBehaviorVersionAcceptanceResolver: AgentBehaviorVersionAcceptanceResolver;
   agentRunExecutor: AgentRunExecutor;
   agentRunId: string;
   input: AgentRunRequest;
@@ -24,14 +24,14 @@ export type CreateAgentRunResponseOptions = {
 };
 
 export type RegisterAgentRunRoutesOptions = {
-  agentBehaviorVersionAcceptance: AgentBehaviorVersionAcceptanceInput;
+  agentBehaviorVersionAcceptanceResolver: AgentBehaviorVersionAcceptanceResolver;
   agentRunExecutor: AgentRunExecutor;
   agentRunTelemetry: AgentRunTelemetry;
   createAgentRunId: () => string;
 };
 
 const createAgentRunStream = (
-  agentBehaviorVersionAcceptance: AgentBehaviorVersionAcceptanceInput,
+  agentBehaviorVersionAcceptanceResolver: AgentBehaviorVersionAcceptanceResolver,
   executor: AgentRunExecutor,
   agentRunId: string,
   input: AgentRunRequest,
@@ -40,7 +40,7 @@ const createAgentRunStream = (
 ) => {
   // The response body is a validated NDJSON stream: one Agent Run event per line.
   const lifecycle = createAgentRunLifecycle({
-    agentBehaviorVersionAcceptance,
+    agentBehaviorVersionAcceptance: agentBehaviorVersionAcceptanceResolver(input),
     agentRunExecutor: executor,
     agentRunId,
     input,
@@ -92,7 +92,7 @@ export const validateAgentRunRequest = validator("json", (body, c) => {
 });
 
 export const createAgentRunResponse = ({
-  agentBehaviorVersionAcceptance,
+  agentBehaviorVersionAcceptanceResolver,
   agentRunExecutor,
   agentRunId,
   input,
@@ -101,7 +101,7 @@ export const createAgentRunResponse = ({
 }: CreateAgentRunResponseOptions) =>
   new Response(
     createAgentRunStream(
-      agentBehaviorVersionAcceptance,
+      agentBehaviorVersionAcceptanceResolver,
       agentRunExecutor,
       agentRunId,
       input,
@@ -119,7 +119,7 @@ export const createAgentRunResponse = ({
 export const registerAgentRunRoutes = <App extends HonoBase>(
   app: App,
   {
-    agentBehaviorVersionAcceptance,
+    agentBehaviorVersionAcceptanceResolver,
     agentRunExecutor,
     agentRunTelemetry,
     createAgentRunId,
@@ -130,7 +130,7 @@ export const registerAgentRunRoutes = <App extends HonoBase>(
     const telemetryScope = agentRunTelemetry.start(agentRunId);
 
     return createAgentRunResponse({
-      agentBehaviorVersionAcceptance,
+      agentBehaviorVersionAcceptanceResolver,
       agentRunExecutor,
       agentRunId,
       input: c.req.valid("json"),

@@ -1,9 +1,18 @@
 import { telemetry } from "./instrumentation";
 import { serve } from "@hono/node-server";
-import { app } from "./app";
+import { createApp } from "./app";
+import { DEFAULT_DEVELOPMENT_AGENT_BEHAVIOR_VERSION } from "./agent-run-behavior";
 import { logger } from "./logger";
+import { loadRuntimeProfileForStartup } from "./runtime-profile-config";
 
 const port = Number(process.env.PORT ?? 3000);
+const runtimeProfile = loadRuntimeProfileForStartup();
+const app = createApp({
+  agentBehaviorVersionAcceptance: {
+    agentBehaviorVersion: DEFAULT_DEVELOPMENT_AGENT_BEHAVIOR_VERSION,
+    runtimeProfile,
+  },
+});
 
 const server = serve({ fetch: app.fetch, port }, (info) => {
   logger.info("API server started", {
@@ -11,6 +20,7 @@ const server = serve({ fetch: app.fetch, port }, (info) => {
     attributes: {
       "server.address": "localhost",
       "server.port": info.port,
+      "metadata.runtime_profile.id": runtimeProfile.profileId,
       "telemetry.enabled": telemetry.enabled,
     },
   });

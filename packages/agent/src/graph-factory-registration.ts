@@ -2,8 +2,10 @@ import { execFileSync } from "node:child_process";
 
 import {
   graphFactoryRuntimeRequestSchema,
+  runtimeProfileSchema,
   strictAgentBehaviorVersionSchema,
   type GraphFactoryRuntimeRequest,
+  type RuntimeProfile,
   type StrictAgentBehaviorVersion,
 } from "@teach-everything/shared";
 
@@ -21,6 +23,7 @@ export interface SourceRevisionState {
 export interface PublishableGraphFactoryVersionRegistrationInput<TrialParameters, Graph> {
   readonly graphFactory: PublishableGraphFactory<TrialParameters, Graph>;
   readonly behaviorVersionInputs: unknown;
+  readonly runtimeProfile: unknown;
 }
 
 export interface PublishableGraphFactoryVersionRegistration<TrialParameters, Graph> {
@@ -163,10 +166,15 @@ export const createPublishableGraphFactoryRuntime = <TrialParameters, Graph>(
 export const registerPublishableGraphFactoryVersion = <TrialParameters, Graph>({
   graphFactory,
   behaviorVersionInputs,
+  runtimeProfile,
 }: PublishableGraphFactoryVersionRegistrationInput<TrialParameters, Graph>) => {
+  const parsedRuntimeProfile: RuntimeProfile = runtimeProfileSchema.parse(runtimeProfile);
   const sourceRevision = captureGitSourceRevision();
 
-  if (sourceRevision.worktreeState !== "clean") {
+  if (
+    parsedRuntimeProfile.runtimePolicy.sourceRevision.requireCleanForPublishedGraphVersions &&
+    sourceRevision.worktreeState !== "clean"
+  ) {
     throw new RangeError(
       "Cannot register a publishable Graph Factory version from a dirty worktree",
     );

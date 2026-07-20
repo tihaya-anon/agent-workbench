@@ -1,8 +1,44 @@
 import type { AgentRunExecutor } from "@teach-everything/agent";
-import { agentRunEventLineSchema, type AgentRunExecutorEvent } from "@teach-everything/shared";
+import {
+  agentRunEventLineSchema,
+  runtimeProfileSchema,
+  type AgentRunExecutorEvent,
+} from "@teach-everything/shared";
 import { serve } from "@hono/node-server";
+import type {
+  AgentRunAcceptedTelemetry,
+  AgentRunTelemetryScope,
+  AgentRunTerminalOutcome,
+} from "@teach-everything/observability";
 import { describe, expect, it } from "vitest";
+import developmentProfileDocument from "../../../../profiles/runtime-development.json";
 import { createApp } from "../app";
+import { createAgentRunResponse } from "./agent-runs";
+
+const developmentRuntimeProfile = runtimeProfileSchema.parse(developmentProfileDocument);
+
+const createRecordedTelemetryScope = () => {
+  const telemetry: {
+    accepted: AgentRunAcceptedTelemetry[];
+    finishes: AgentRunTerminalOutcome[];
+    scope: AgentRunTelemetryScope;
+  } = {
+    accepted: [],
+    finishes: [],
+    scope: {
+      recordAccepted: (acceptedTelemetry) => {
+        telemetry.accepted.push(acceptedTelemetry);
+      },
+      recordCancellationRequested: () => undefined,
+      runInContext: (operation) => operation(),
+      finish: (terminalOutcome) => {
+        telemetry.finishes.push(terminalOutcome);
+      },
+    },
+  };
+
+  return telemetry;
+};
 
 const decodeAgentRunEvents = (body: string) =>
   body
@@ -131,6 +167,49 @@ const controlledCancellationExecutor = () => {
 };
 
 describe("POST /api/agent-runs", () => {
+  it("resolves behavior identity from the parsed Agent Run request", async () => {
+    // Given
+    const telemetry = createRecordedTelemetryScope();
+    const input = { message: "variant-alpha" };
+    const response = createAgentRunResponse({
+      agentBehaviorVersionAcceptanceResolver: (agentRunRequest) => ({
+        agentBehaviorVersion: {
+          graph: `graph:${agentRunRequest.message}`,
+          sourceRevision: "unknown",
+        },
+        runtimeProfile: developmentRuntimeProfile,
+      }),
+      agentRunExecutor: {
+        execute: () => agentRunEvents({ version: 1, type: "run.completed" }),
+      },
+      agentRunId: "ar_variant_alpha",
+      input,
+      signal: new AbortController().signal,
+      telemetryScope: telemetry.scope,
+    });
+
+    // When
+    const body = await response.text();
+
+    // Then
+    expect(decodeAgentRunEvents(body).at(-1)).toEqual({
+      version: 1,
+      type: "run.completed",
+    });
+    expect(telemetry.accepted).toEqual([
+      {
+        agentBehaviorVersion: {
+          graph: "graph:variant-alpha",
+          sourceRevision: "unknown",
+        },
+        comparable: false,
+        promotable: false,
+        runtimeProfileId: "runtime-development",
+      },
+    ]);
+    expect(telemetry.finishes).toEqual([{ outcome: "succeeded" }]);
+  });
+
   it("streams NDJSON Agent Run events with one identifier shared by the header and first event", async () => {
     // Given
     const received: { message?: string } = {};
