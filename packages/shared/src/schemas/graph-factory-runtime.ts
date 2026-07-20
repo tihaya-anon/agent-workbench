@@ -18,6 +18,10 @@ export const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
   ]),
 );
 
+/**
+ * @deprecated Python owns experiment execution. This request shape is archived with the deprecated
+ * TypeScript Graph Factory runtime and is not part of the Agent Run worker protocol.
+ */
 export const graphFactoryRuntimeRequestSchema = z
   .object({
     graphFactoryIdentity: nonEmptyGraphFactorySelectorSchema,
@@ -26,4 +30,8 @@ export const graphFactoryRuntimeRequestSchema = z
   })
   .strict();
 
+/**
+ * @deprecated Python owns experiment execution. This request shape is archived with the deprecated
+ * TypeScript Graph Factory runtime and is not part of the Agent Run worker protocol.
+ */
 export type GraphFactoryRuntimeRequest = z.infer<typeof graphFactoryRuntimeRequestSchema>;

@@ -1,12 +1,15 @@
 # Teach Everything
 
-Pure TypeScript full-stack workspace with React, Hono, LangGraph, OpenTelemetry, Zod, and Drizzle.
+TypeScript web/API control plane for Teach Everything, with React, Hono, OpenTelemetry, Zod, and
+Drizzle. Agent Run graph execution is owned by the Python runtime repository
+`tihaya-anon/agent-runtime-python`; this workspace owns the browser-facing API, shared schemas, and
+Agent Run Stream contract.
 
 ## Workspace
 
 - `apps/web`: Vite and React frontend
-- `apps/api`: Hono API with OpenTelemetry instrumentation
-- `packages/agent`: LangGraph agent runtime
+- `apps/api`: Hono API with OpenTelemetry instrumentation and Python worker gateway wiring
+- `packages/agent`: language-neutral Agent Run executor contracts and deprecated TS graph-factory runtime helpers
 - `packages/observability`: Structured logging, tracing helpers, and Node.js telemetry lifecycle
 - `packages/shared`: Shared Zod schemas and TypeScript types
 - `packages/database`: Drizzle schema and PostgreSQL client

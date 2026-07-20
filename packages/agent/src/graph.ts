@@ -7,14 +7,26 @@ import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { createLangChainTelemetryCallback } from "@teach-everything/observability";
 import type { PublishableGraphFactory } from "./graph-factory-registration";
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export const agentInput = Annotation.Root({
   prompt: Annotation<string>,
 });
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export const agentOutput = Annotation.Root({
   answer: Annotation<string>,
 });
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export const agentState = Annotation.Root({
   prompt: Annotation<string>,
   answer: Annotation<string>,
@@ -74,6 +86,10 @@ const withActiveNodeContext = (node: AgentNode): AgentNode => {
 const observedNode = <Name extends string>(name: Name, node: AgentNode) =>
   [name, withActiveNodeContext(node)] as const;
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export const createAgentGraph = (generateNode: AgentNode) =>
   // Export the native compiled graph so callers keep LangGraph streaming and callback behavior.
   new StateGraph({
@@ -94,12 +110,20 @@ export const createAgentGraph = (generateNode: AgentNode) =>
 
 export type AgentGraph = ReturnType<typeof createAgentGraph>;
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export interface AgentGraphFactoryInput<TrialParameters> {
   readonly identity: string;
   readonly version: string;
   createGenerateNode: (trialParameters: TrialParameters) => AgentNode;
 }
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export const createAgentGraphFactory = <TrialParameters>({
   identity,
   version,

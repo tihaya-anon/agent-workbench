@@ -1,5 +1,12 @@
 # Defer Agent Graph Specs in favor of TypeScript LangGraph factories
 
+Status: superseded for runtime ownership by the Python runtime migration tracked in
+`docs/agents/agent-run-worker-protocol.md`, `docs/agents/python-runtime-repository.md`, and
+`docs/agents/graph-factory-runtime.md`. The Agent Graph Spec remains deferred, but LangGraph
+execution ownership moved from TypeScript Graph Factories to `tihaya-anon/agent-runtime-python`.
+The TypeScript workspace now owns the API gateway, shared schemas, Runtime Profile validation,
+Agent Run Stream contract, and telemetry vocabulary.
+
 Do not introduce a language-neutral Agent Graph Spec package yet. Agent graph behavior will be defined by TypeScript LangGraph factories, because using LangGraph directly preserves the full runtime API while the project is still learning which graph variations matter.
 
 Python can still manage trials by selecting graph factories, generating parameters, invoking the TypeScript runtime, and collecting results. It should not require a separate graph definition language while graph code, prompt files, tool code, and runtime code all live in Git.

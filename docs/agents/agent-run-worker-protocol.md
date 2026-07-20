@@ -92,7 +92,7 @@ violations.
 ## Ownership
 
 - This repository owns `packages/shared/src/schemas/agent-run-worker.ts`, the TS API gateway, and
-  frontend stream stability.
+  Agent Run Stream stability.
 - `tihaya-anon/agent-runtime-python` owns graph execution, Python LangGraph stream interpretation,
   and experiment performance.
 - Shared protocol changes should start in this repository, then be consumed by the Python runtime

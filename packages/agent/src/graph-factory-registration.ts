@@ -9,6 +9,10 @@ import {
   type StrictAgentBehaviorVersion,
 } from "@teach-everything/shared";
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export interface PublishableGraphFactory<TrialParameters, Graph> {
   readonly identity: string;
   readonly version: string;
@@ -20,12 +24,20 @@ export interface SourceRevisionState {
   readonly worktreeState: "clean" | "dirty";
 }
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export interface PublishableGraphFactoryVersionRegistrationInput<TrialParameters, Graph> {
   readonly graphFactory: PublishableGraphFactory<TrialParameters, Graph>;
   readonly behaviorVersionInputs: unknown;
   readonly runtimeProfile: unknown;
 }
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export interface PublishableGraphFactoryVersionRegistration<TrialParameters, Graph> {
   readonly graphFactory: PublishableGraphFactory<TrialParameters, Graph>;
   readonly graphFactoryIdentity: string;
@@ -34,6 +46,10 @@ export interface PublishableGraphFactoryVersionRegistration<TrialParameters, Gra
   readonly sourceRevision: SourceRevisionState;
 }
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export interface PublishableGraphFactoryCatalog<TrialParameters, Graph> {
   listGraphFactories: () => ReadonlyArray<PublishableGraphFactory<TrialParameters, Graph>>;
   selectGraphFactory: (
@@ -43,6 +59,10 @@ export interface PublishableGraphFactoryCatalog<TrialParameters, Graph> {
   createGraph: (identity: string, version: string, trialParameters: TrialParameters) => Graph;
 }
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export interface PublishableGraphFactoryRuntime<Graph> {
   createGraphForTrial: (request: unknown) => Graph;
 }
@@ -75,6 +95,10 @@ const ensureConcreteGraphFactoryMetadata = <TrialParameters, Graph>(
   };
 };
 
+/**
+ * @deprecated Python owns trial publishing and runtime execution. Keep only for archived TS
+ * graph-factory compatibility.
+ */
 export const captureGitSourceRevision = (cwd = process.cwd()): SourceRevisionState => {
   try {
     const commitSha = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -95,6 +119,10 @@ export const captureGitSourceRevision = (cwd = process.cwd()): SourceRevisionSta
   }
 };
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export const createPublishableGraphFactoryCatalog = <TrialParameters, Graph>(
   graphFactories: ReadonlyArray<PublishableGraphFactory<TrialParameters, Graph>>,
 ) => {
@@ -144,6 +172,10 @@ export const createPublishableGraphFactoryCatalog = <TrialParameters, Graph>(
   } satisfies PublishableGraphFactoryCatalog<TrialParameters, Graph>;
 };
 
+/**
+ * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
+ * compatibility notes.
+ */
 export const createPublishableGraphFactoryRuntime = <TrialParameters, Graph>(
   catalog: PublishableGraphFactoryCatalog<TrialParameters, Graph>,
 ) =>
@@ -163,6 +195,10 @@ export const createPublishableGraphFactoryRuntime = <TrialParameters, Graph>(
     },
   }) satisfies PublishableGraphFactoryRuntime<Graph>;
 
+/**
+ * @deprecated Python owns trial publishing and runtime execution. Keep only for archived TS
+ * graph-factory compatibility.
+ */
 export const registerPublishableGraphFactoryVersion = <TrialParameters, Graph>({
   graphFactory,
   behaviorVersionInputs,

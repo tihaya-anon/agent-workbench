@@ -21,7 +21,7 @@ Use a public repository unless a later product or data-handling decision require
 
 - The TypeScript web/API control plane.
 - The canonical Agent Run worker protocol schemas.
-- Browser-facing Agent Run stream stability.
+- Agent Run Stream stability.
 - Translation between worker events and frontend Agent Run events.
 
 ## Contract Direction

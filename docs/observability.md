@@ -90,6 +90,10 @@ non-traceable, while a caller-provided runnable participates in the normal callb
 
 ## Agent Trace Hierarchy
 
+This section describes the archived TypeScript LangGraph runtime. Current Agent Run graph execution
+is owned by `tihaya-anon/agent-runtime-python`; the TypeScript gateway keeps Agent Run telemetry
+attribute names stable while Python owns runtime-internal LangGraph spans.
+
 The target agent equivalent of a Spring Boot `controller -> service -> database` trace is:
 
 ```text

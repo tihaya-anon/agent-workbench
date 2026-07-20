@@ -1,12 +1,43 @@
-# Graph Factory Runtime Handoff
+# Deprecated TypeScript Graph Factory Runtime
 
-This project keeps executable graph behavior in TypeScript. Python experiment tooling chooses which
-published TypeScript Graph Factory to run and supplies serializable trial parameters, but it does
-not define graph behavior that the TypeScript runtime loads.
+Status: deprecated after Python runtime parity work. Keep this document as an archive for tests,
+compatibility, and old experiment notes; do not build new production Agent Run behavior on the
+TypeScript Graph Factory runtime.
 
-## Split Of Responsibility
+Python is now the runtime owner. The TypeScript workspace owns the API gateway, shared contracts,
+Runtime Profile validation, Agent Run Stream stability, and telemetry vocabulary. The Python runtime
+repository `tihaya-anon/agent-runtime-python` owns LangGraph execution and experiment performance.
 
-TypeScript owns behavior definition:
+ADR 0008 originally selected TypeScript Graph Factories as the near-term runtime artifact. The
+Python runtime migration supersedes that runtime-ownership decision while preserving the ADR 0008
+decision to defer a language-neutral Agent Graph Spec.
+
+## Parity And Retirement Criteria
+
+The TypeScript Graph Factory runtime can stay only as archived compatibility code until these
+criteria remain true:
+
+- API startup uses `createPythonWorkerAgentRunExecutor` when Agent Runs are enabled.
+- Frontend tests continue to consume the same Agent Run Stream contract.
+- Worker protocol schemas and telemetry names remain language-neutral in `packages/shared` and
+  `packages/observability`.
+- Python worker runs support start, cancellation, validation failure, progress suppression,
+  terminal classification, and local experiment sweeps.
+- No production application imports `createAgentGraph`, `createAgentGraphFactory`,
+  `createPublishableGraphFactoryRuntime`, or `readGraphFactoryRuntimeRequestFromStdin`.
+
+When a future cleanup removes the archived TS runtime helpers, keep the language-neutral
+`AgentRunExecutor` contract in `packages/agent`; it is the gateway seam used by the Python worker
+adapter.
+
+## Archived Design
+
+The rest of this document records the old TypeScript runtime model so archived tests and historical
+experiment notes remain interpretable. Treat the examples as non-production migration history.
+
+## Former Split Of Responsibility
+
+The original design kept behavior definition in TypeScript:
 
 - Defines Graph Factories as direct LangGraph code.
 - Assigns each factory a stable `identity` and `version`.
@@ -14,23 +45,19 @@ TypeScript owns behavior definition:
 - Builds the factory catalog used by the runtime entry point.
 - Creates and executes the selected graph.
 
-Python owns experiment orchestration:
+Python originally owned experiment orchestration around the TypeScript runtime:
 
 - Chooses trial matrices, parameter sweeps, seeds, and repetitions.
 - Selects a TypeScript `graphFactoryIdentity` and `graphFactoryVersion`.
 - Sends JSON `trialParameters` to the TypeScript runtime.
 - Captures process output, telemetry references, and trial results.
 
-Do not define Graph Factories in Python and ask TypeScript to load them. That would make the
-TypeScript runtime execute Python-defined behavior, which this architecture explicitly avoids. If a
-Python experiment needs a new behavior variant, add a TypeScript Graph Factory version, then have
-Python select that version.
+That split is superseded. New behavior variants now belong in the Python runtime repository.
 
-## TypeScript Definition
+## Former TypeScript Definition
 
-Define factories in a TypeScript module owned by the runtime or experiment package. A factory is a
-small object with an identity, version, and `createGraph` function. Use `createAgentGraphFactory`
-when the behavior fits the standard agent graph shape.
+The archived runtime defined factories in a TypeScript module owned by the runtime or experiment
+package. A factory was a small object with an identity, version, and `createGraph` function.
 
 ```ts
 import {
@@ -64,11 +91,11 @@ The runtime request is validated by `graphFactoryRuntimeRequestSchema`. It carri
 - `graphFactoryVersion`
 - `trialParameters`
 
-## Publishable Registration
+## Former Publishable Registration
 
-When a Graph Factory version is promoted for comparable trials, register it with complete behavior
-identity inputs. Registration captures the current Git Source Revision, checks the Runtime Profile's
-source policy, and produces a strict Agent Behavior Version tuple.
+When an archived Graph Factory version was promoted for comparable trials, registration captured
+complete behavior identity inputs, the current Git Source Revision, the Runtime Profile source
+policy, and a strict Agent Behavior Version tuple.
 
 ```ts
 import { registerPublishableGraphFactoryVersion } from "@teach-everything/agent";
@@ -92,10 +119,10 @@ Under `profiles/runtime-published.json`, dirty worktrees are rejected so the Sou
 checkoutable commit. Under a development Runtime Profile, dirty source can be allowed for local
 ad hoc work, but those runs are not comparable or promotable.
 
-## Python Orchestration
+## Former Python Orchestration
 
-Python sends a runtime request to a TypeScript process. The request selects a pre-existing
-TypeScript factory and supplies JSON trial parameters.
+In the archived model, Python sent a runtime request to a TypeScript process. The request selected a
+pre-existing TypeScript factory and supplied JSON trial parameters.
 
 ```python
 import json
@@ -120,8 +147,9 @@ completed = subprocess.run(
 result = json.loads(completed.stdout)
 ```
 
-For parameter sweeps, Python repeats this call with different `trialParameters` or different
-factory selectors. The TypeScript catalog decides whether the requested identity and version exist.
+For parameter sweeps, Python repeated this call with different `trialParameters` or different
+factory selectors. The TypeScript catalog decided whether the requested identity and version
+existed.
 
 ```python
 for prompt_style in ["socratic", "direct", "hint-first"]:
@@ -130,10 +158,10 @@ for prompt_style in ["socratic", "direct", "hint-first"]:
         "graphFactoryVersion": "v1",
         "trialParameters": {"promptStyle": prompt_style},
     }
-    # invoke the TypeScript runtime and record the result
+    # historical: invoke the TypeScript runtime and record the result
 ```
 
-## Runtime Profile Selection
+## Current Runtime Profile Selection
 
 The API server selects Runtime Profile content from reviewable JSON documents:
 
@@ -144,13 +172,14 @@ The API server selects Runtime Profile content from reviewable JSON documents:
 Profile selection may come from environment or CLI wiring, but policy content belongs in the JSON
 document. Do not encode policy inline in Python, shell scripts, or environment variables.
 
-## Why Not Python-Defined Factories?
+## Former Rejection Of Python-Defined Factories
 
-Python-defined factories would require one of these unsupported designs:
+The archived design rejected Python-defined factories because they would have required one of these
+unsupported TypeScript-runtime designs:
 
 - A graph schema or IDL that Python emits and TypeScript compiles.
 - Loading Python code or Python graph objects inside the TypeScript runtime.
 - A cross-language behavior serialization format for LangGraph objects.
 
-Those are intentionally out of scope. The current design keeps full LangGraph SDK usage in
-TypeScript and lets Python remain an external experiment performer.
+Those options remain out of scope for the TypeScript workspace. Current LangGraph SDK usage belongs
+inside the Python runtime repository instead.
