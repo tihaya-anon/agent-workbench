@@ -5,6 +5,7 @@ import {
 } from "@langchain/core/runnables";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { createLangChainTelemetryCallback } from "@teach-everything/observability";
+import type { PublishableGraphFactory } from "./graph-factory-registration";
 
 export const agentInput = Annotation.Root({
   prompt: Annotation<string>,
@@ -90,3 +91,22 @@ export const createAgentGraph = (generateNode: AgentNode) =>
       callbacks: [telemetryCallback],
       runName: "agent",
     });
+
+export type AgentGraph = ReturnType<typeof createAgentGraph>;
+
+export interface AgentGraphFactoryInput<TrialParameters> {
+  readonly identity: string;
+  readonly version: string;
+  createGenerateNode: (trialParameters: TrialParameters) => AgentNode;
+}
+
+export const createAgentGraphFactory = <TrialParameters>({
+  identity,
+  version,
+  createGenerateNode,
+}: AgentGraphFactoryInput<TrialParameters>) =>
+  ({
+    identity,
+    version,
+    createGraph: (trialParameters) => createAgentGraph(createGenerateNode(trialParameters)),
+  }) satisfies PublishableGraphFactory<TrialParameters, AgentGraph>;
