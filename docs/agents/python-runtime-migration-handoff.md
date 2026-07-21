@@ -25,7 +25,7 @@ Completed GitHub issues:
 
 Open GitHub issues:
 
-- #23 Migrate LangGraph execution to Python runtime behind TS gateway.
+- None for the TypeScript gateway migration umbrella.
 
 ## Local Repositories
 
@@ -80,40 +80,42 @@ For #21:
 
 For #22:
 
-- `pnpm exec vitest run packages/agent/src/agent-run-executor.test.ts packages/agent/src/graph-factory-registration.test.ts packages/agent/src/graph-factory-runtime-cli.test.ts apps/api/src/app.test.ts apps/api/src/python-worker-agent-run-executor.test.ts apps/api/src/routes/agent-runs.test.ts`
+- `pnpm exec vitest run packages/agent/src/agent-run-executor.test.ts packages/agent/src/archive/graph-factory-runtime/registration.test.ts packages/agent/src/archive/graph-factory-runtime/cli.test.ts apps/api/src/app.test.ts apps/api/src/python-worker-agent-run-executor.test.ts apps/api/src/routes/agent-runs.test.ts`
 - `pnpm --filter @teach-everything/agent typecheck`
 - `pnpm --filter @teach-everything/api typecheck`
 
 ## Deprecated TS Runtime Inventory
 
-The remaining TS LangGraph runtime helpers live in `packages/agent` and are marked deprecated:
+The remaining TS LangGraph runtime helpers live under explicit archive paths and are marked
+deprecated:
 
-- `src/graph.ts`: archived LangGraph graph wrapper, annotations, telemetry context wrapper, and
-  Graph Factory helper.
-- `src/graph-factory-registration.ts`: archived Graph Factory catalog, registration, Source
-  Revision capture, and strict Agent Behavior Version assembly.
-- `src/graph-factory-runtime-cli.ts`: archived process-stdin Graph Factory request parser.
-- `packages/shared/src/schemas/graph-factory-runtime.ts`: archived Graph Factory runtime request
+- `packages/agent/src/archive/graph-factory-runtime/graph.ts`: archived LangGraph graph wrapper,
+  annotations, telemetry context wrapper, and Graph Factory helper.
+- `packages/agent/src/archive/graph-factory-runtime/registration.ts`: archived Graph Factory
+  catalog, registration, Source Revision capture, and strict Agent Behavior Version assembly.
+- `packages/agent/src/archive/graph-factory-runtime/cli.ts`: archived process-stdin Graph Factory
+  request parser.
+- `packages/shared/src/archive/graph-factory-runtime.ts`: archived Graph Factory runtime request
   schema.
+
+These helpers are no longer exported from the active `@teach-everything/agent` or
+`@teach-everything/shared` package roots. The shared request schema remains available only through
+the explicit `@teach-everything/shared/archive/graph-factory-runtime` compatibility subpath.
 
 The tests that protect this archived compatibility surface are:
 
 - `packages/agent/src/agent-run-executor.test.ts`: language-neutral executor contract remains the
   gateway seam.
-- `packages/agent/src/graph-factory-registration.test.ts`: archived catalog selection,
-  registration, dirty-worktree enforcement, and behavior-version assembly.
-- `packages/agent/src/graph-factory-runtime-cli.test.ts`: archived Graph Factory runtime request
-  parsing.
-- `packages/shared/src/schemas/graph-factory-runtime.test.ts`: archived request schema validation.
+- `packages/agent/src/archive/graph-factory-runtime/registration.test.ts`: archived catalog
+  selection, registration, dirty-worktree enforcement, and behavior-version assembly.
+- `packages/agent/src/archive/graph-factory-runtime/cli.test.ts`: archived Graph Factory runtime
+  request parsing.
+- `packages/shared/src/archive/graph-factory-runtime.test.ts`: archived request schema validation.
 - `apps/api/src/app.test.ts`, `apps/api/src/python-worker-agent-run-executor.test.ts`, and
   `apps/api/src/routes/agent-runs.test.ts`: API Agent Runs are exposed only when an executor is
   configured, and the configured Python worker executor preserves gateway behavior.
 
 ## Next Recommended Slice
 
-Complete #23 by validating the final migration umbrella:
-
-- Confirm `#21` and `#22` are closed with verification notes.
-- Confirm the API gateway still starts Agent Runs only through configured Python worker discovery.
-- Confirm docs describe Python as runtime owner and TS as gateway/contract owner.
-- Close #23 when the migration criteria are satisfied.
+Remove the archived TS graph-factory runtime entirely once there is no historical compatibility
+value in keeping the protected tests.

@@ -2,9 +2,11 @@ import { execFileSync } from "node:child_process";
 
 import {
   graphFactoryRuntimeRequestSchema,
+  type GraphFactoryRuntimeRequest,
+} from "@teach-everything/shared/archive/graph-factory-runtime";
+import {
   runtimeProfileSchema,
   strictAgentBehaviorVersionSchema,
-  type GraphFactoryRuntimeRequest,
   type RuntimeProfile,
   type StrictAgentBehaviorVersion,
 } from "@teach-everything/shared";

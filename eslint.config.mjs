@@ -57,6 +57,12 @@ export default defineConfig(
     },
   },
   {
+    files: ["packages/**/src/archive/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-deprecated": "off",
+    },
+  },
+  {
     files: ["apps/web/**/*.{ts,tsx}"],
     ...reactHooks.configs.flat["recommended-latest"],
     plugins: {

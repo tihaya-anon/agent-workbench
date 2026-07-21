@@ -23,8 +23,8 @@ criteria remain true:
   `packages/observability`.
 - Python worker runs support start, cancellation, validation failure, progress suppression,
   terminal classification, and local experiment sweeps.
-- No production application imports `createAgentGraph`, `createAgentGraphFactory`,
-  `createPublishableGraphFactoryRuntime`, or `readGraphFactoryRuntimeRequestFromStdin`.
+- No production application imports archived helpers from
+  `packages/agent/src/archive/graph-factory-runtime`.
 
 When a future cleanup removes the archived TS runtime helpers, keep the language-neutral
 `AgentRunExecutor` contract in `packages/agent`; it is the gateway seam used by the Python worker
@@ -59,13 +59,16 @@ That split is superseded. New behavior variants now belong in the Python runtime
 The archived runtime defined factories in a TypeScript module owned by the runtime or experiment
 package. A factory was a small object with an identity, version, and `createGraph` function.
 
+Archived helpers now live under `packages/agent/src/archive/graph-factory-runtime` and are not
+exported from the active `@teach-everything/agent` package root.
+
 ```ts
+import { readGraphFactoryRuntimeRequestFromStdin } from "./archive/graph-factory-runtime/cli";
+import { createAgentGraphFactory } from "./archive/graph-factory-runtime/graph";
 import {
-  createAgentGraphFactory,
   createPublishableGraphFactoryCatalog,
   createPublishableGraphFactoryRuntime,
-  readGraphFactoryRuntimeRequestFromStdin,
-} from "@teach-everything/agent";
+} from "./archive/graph-factory-runtime/registration";
 
 const baselineTutorFactory = createAgentGraphFactory<{ promptStyle: string }>({
   identity: "graph-factory:tutor",
@@ -98,7 +101,7 @@ complete behavior identity inputs, the current Git Source Revision, the Runtime 
 policy, and a strict Agent Behavior Version tuple.
 
 ```ts
-import { registerPublishableGraphFactoryVersion } from "@teach-everything/agent";
+import { registerPublishableGraphFactoryVersion } from "./archive/graph-factory-runtime/registration";
 import publishedProfileDocument from "../../profiles/runtime-published.json";
 
 const registration = registerPublishableGraphFactoryVersion({

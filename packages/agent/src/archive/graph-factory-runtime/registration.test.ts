@@ -4,15 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runtimeProfileSchema } from "@teach-everything/shared";
 import { describe, expect, it } from "vitest";
-import developmentProfileDocument from "../../../profiles/runtime-development.json";
-import publishedProfileDocument from "../../../profiles/runtime-published.json";
+import developmentProfileDocument from "../../../../../profiles/runtime-development.json";
+import publishedProfileDocument from "../../../../../profiles/runtime-published.json";
+import { createAgentGraphFactory } from "./graph";
 import {
-  createAgentGraphFactory,
   createPublishableGraphFactoryCatalog,
   createPublishableGraphFactoryRuntime,
   registerPublishableGraphFactoryVersion,
   type PublishableGraphFactory,
-} from "./index";
+} from "./registration";
 
 const baselineBehaviorInputs = {
   state: "state:lesson-session:v1",

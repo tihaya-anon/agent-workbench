@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseGraphFactoryRuntimeRequestJson } from "./index";
+import { parseGraphFactoryRuntimeRequestJson } from "./cli";
 
 describe("parseGraphFactoryRuntimeRequestJson", () => {
   it("parses a JSON Graph Factory runtime request for process-based trial tooling", () => {

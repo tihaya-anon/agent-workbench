@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { graphFactoryRuntimeRequestSchema } from "../index";
+import { graphFactoryRuntimeRequestSchema } from "./graph-factory-runtime";
 
 describe("graphFactoryRuntimeRequestSchema", () => {
   it("accepts a JSON request that selects a Graph Factory version and passes trial parameters", () => {

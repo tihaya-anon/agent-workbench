@@ -5,7 +5,7 @@ import {
 } from "@langchain/core/runnables";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { createLangChainTelemetryCallback } from "@teach-everything/observability";
-import type { PublishableGraphFactory } from "./graph-factory-registration";
+import type { PublishableGraphFactory } from "./registration";
 
 /**
  * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and
