@@ -363,7 +363,7 @@ const agentRunDiagnosisDashboardV2 = (): DashboardV2 => ({
   },
   links: [],
   preload: false,
-  tags: ["teach-everything", "agent-run-diagnosis"],
+  tags: ["agent-run-diagnosis"],
   timeSettings: {
     timezone: "browser",
     from: "now-6h",

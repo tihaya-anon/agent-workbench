@@ -69,7 +69,6 @@ const Workspace = () => {
           <span className="flex size-8 items-center justify-center rounded-md bg-[#d8f26a] text-[#202522]">
             <Sparkles className="size-4" aria-hidden="true" />
           </span>
-          <span className="text-sm font-semibold">Teach Everything</span>
         </div>
 
         <div className="flex flex-1 flex-col px-3 py-4">

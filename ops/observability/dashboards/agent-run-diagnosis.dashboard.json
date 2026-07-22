@@ -27,7 +27,7 @@
   "title": "Agent Run Diagnosis",
   "uid": "agent-run-diagnosis",
   "description": "Diagnose one Teach Everything Agent Run from its opaque Agent Run Identifier.",
-  "tags": ["teach-everything", "agent-run-diagnosis"],
+  "tags": ["agent-run-diagnosis"],
   "version": 1,
   "refresh": "",
   "panels": [
