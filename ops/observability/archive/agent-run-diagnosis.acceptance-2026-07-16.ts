@@ -102,7 +102,7 @@ const createAcceptanceExecutor = (): AgentRunExecutor => ({
   async *execute(input, signal) {
     const scenario = input.message as Scenario;
     const callback = createLangChainTelemetryCallback({
-      instrumentationName: "@teach-everything/observability/agent-run-diagnosis-acceptance",
+      instrumentationName: "@agent-workbench/observability/agent-run-diagnosis-acceptance",
     }) as LifecycleCallback;
 
     switch (scenario) {

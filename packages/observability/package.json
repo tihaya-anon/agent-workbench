@@ -1,5 +1,5 @@
 {
-  "name": "@teach-everything/observability",
+  "name": "@agent-workbench/observability",
   "private": true,
   "type": "module",
   "exports": {
@@ -19,7 +19,7 @@
     "@opentelemetry/exporter-trace-otlp-proto": "^0.220.0",
     "@opentelemetry/sdk-metrics": "^2.9.0",
     "@opentelemetry/sdk-node": "^0.220.0",
-    "@teach-everything/shared": "workspace:*"
+    "@agent-workbench/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

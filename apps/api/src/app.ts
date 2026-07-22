@@ -1,10 +1,10 @@
-import type { AgentRunExecutor } from "@teach-everything/agent";
+import type { AgentRunExecutor } from "@agent-workbench/agent";
 import {
   createAgentRunTelemetry,
   runDiagnosticTelemetrySafely,
   type AgentRunTelemetry,
   type Logger,
-} from "@teach-everything/observability";
+} from "@agent-workbench/observability";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { BlankEnv, ExtractSchema } from "hono/types";

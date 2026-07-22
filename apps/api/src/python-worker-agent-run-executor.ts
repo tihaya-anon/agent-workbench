@@ -2,14 +2,14 @@ import {
   AgentRunExecutionError,
   type AgentRunExecutor,
   type AgentRunExecutorContext,
-} from "@teach-everything/agent";
+} from "@agent-workbench/agent";
 import {
   agentRunWorkerEventLineSchema,
   encodeAgentRunWorkerCommandLine,
   type AgentRunExecutorEvent,
   type AgentRunRequest,
   type AgentRunWorkerEvent,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface } from "node:readline";
 import type { PythonWorkerDiscoveryConfig } from "./python-worker-discovery";

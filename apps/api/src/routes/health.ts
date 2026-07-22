@@ -1,4 +1,4 @@
-import { healthResponseSchema } from "@teach-everything/shared";
+import { healthResponseSchema } from "@agent-workbench/shared";
 import type { Context, Hono } from "hono";
 
 const getHealth = (c: Context) => {

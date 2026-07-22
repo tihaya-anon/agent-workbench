@@ -38,7 +38,7 @@ export const ghApi: GhApi = async (endpoint, options = {}) => {
   const method = options.method ?? "GET";
   const args = ["api", endpoint, "-X", method];
   const directory =
-    options.body === undefined ? undefined : await mkdtemp(join(tmpdir(), "teach-everything-gh-"));
+    options.body === undefined ? undefined : await mkdtemp(join(tmpdir(), "agent-workbench-gh-"));
 
   try {
     if (directory !== undefined) {

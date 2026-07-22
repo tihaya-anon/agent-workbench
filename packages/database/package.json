@@ -1,5 +1,5 @@
 {
-  "name": "@teach-everything/database",
+  "name": "@agent-workbench/database",
   "private": true,
   "type": "module",
   "exports": {

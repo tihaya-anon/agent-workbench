@@ -3,13 +3,13 @@ import { execFileSync } from "node:child_process";
 import {
   graphFactoryRuntimeRequestSchema,
   type GraphFactoryRuntimeRequest,
-} from "@teach-everything/shared/archive/graph-factory-runtime";
+} from "@agent-workbench/shared/archive/graph-factory-runtime";
 import {
   runtimeProfileSchema,
   strictAgentBehaviorVersionSchema,
   type RuntimeProfile,
   type StrictAgentBehaviorVersion,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 
 /**
  * @deprecated Python owns LangGraph execution. Keep only for archived TS graph-factory tests and

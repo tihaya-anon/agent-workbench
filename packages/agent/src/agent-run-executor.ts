@@ -5,7 +5,7 @@ import type {
   AgentRunRequest,
   DevelopmentAgentBehaviorVersion,
   RuntimeProfile,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 
 export class AgentRunExecutionError extends Error {
   readonly errorClassification: AgentRunErrorClassification;

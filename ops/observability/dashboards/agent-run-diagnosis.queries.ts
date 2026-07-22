@@ -12,7 +12,7 @@ const traceQlAttribute = (name: string) => `span."${name}"`;
 const AGENT_RUN_OUTCOME_ATTRIBUTE = `${SemanticConventions.METADATA}.agent_run.outcome`;
 
 export const AGENT_RUN_DIAGNOSIS_FIELDS = {
-  apiServiceName: "teach-everything-api",
+  apiServiceName: "agent-workbench-api",
   rootSpanName: "agent.run",
   runIdSpanAttribute: traceQlAttribute(SemanticConventions.SESSION_ID),
   runOutcomeSpanAttribute: traceQlAttribute(AGENT_RUN_OUTCOME_ATTRIBUTE),

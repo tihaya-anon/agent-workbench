@@ -1,6 +1,6 @@
-# Teach Everything
+# Agent Workbench
 
-TypeScript web/API control plane for Teach Everything, with React, Hono, OpenTelemetry, Zod, and
+TypeScript web/API control plane for Agent Workbench, with React, Hono, OpenTelemetry, Zod, and
 Drizzle. Agent Run graph execution is owned by the Python runtime repository
 `tihaya-anon/agent-runtime-python`; this workspace owns the browser-facing API, shared schemas, and
 Agent Run Stream contract.
@@ -54,7 +54,7 @@ TypeScript versions below 6.1. Upgrade TypeScript and `typescript-eslint` togeth
 Database commands read `DATABASE_URL` from the environment:
 
 ```bash
-pnpm --filter @teach-everything/database db:generate
-pnpm --filter @teach-everything/database db:migrate
-pnpm --filter @teach-everything/database db:studio
+pnpm --filter @agent-workbench/database db:generate
+pnpm --filter @agent-workbench/database db:migrate
+pnpm --filter @agent-workbench/database db:studio
 ```

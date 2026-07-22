@@ -114,7 +114,7 @@ Schema artifacts:
 Regenerate those artifacts after protocol changes:
 
 ```bash
-pnpm --filter @teach-everything/shared schema:agent-run-worker
+pnpm --filter @agent-workbench/shared schema:agent-run-worker
 ```
 
 The shared package tests compare the artifacts against the generator output so stale files are

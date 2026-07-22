@@ -140,7 +140,7 @@ describe("createLangChainTelemetryCallback", () => {
     const telemetry = installTelemetryExporters();
     const agentRunTelemetry = createAgentRunTelemetry({ logger: NOOP_LOGGER });
     const callback = createLangChainTelemetryCallback({
-      instrumentationName: "@teach-everything/observability-test",
+      instrumentationName: "@agent-workbench/observability-test",
     });
     const lifecycleCallback = asTestLifecycleCallback(callback);
     const agentRunScope = agentRunTelemetry.start("ar_child_diagnostics");
@@ -281,7 +281,7 @@ describe("createLangChainTelemetryCallback", () => {
     // Given
     const telemetry = installTelemetryExporters();
     const callback = createLangChainTelemetryCallback({
-      instrumentationName: "@teach-everything/observability-test",
+      instrumentationName: "@agent-workbench/observability-test",
     });
     const lifecycleCallback = asTestLifecycleCallback(callback);
     const error = new Error("SENTINEL_EXCEPTION_MESSAGE");
@@ -334,7 +334,7 @@ describe("createLangChainTelemetryCallback", () => {
     const telemetry = installTelemetryExporters();
     const callbackErrors: unknown[] = [];
     const callback = createLangChainTelemetryCallback({
-      instrumentationName: "@teach-everything/observability-test",
+      instrumentationName: "@agent-workbench/observability-test",
       onError: (error) => callbackErrors.push(error),
     });
     const lifecycleCallback = asTestLifecycleCallback(callback);

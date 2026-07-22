@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { runtimeProfileSchema, type RuntimeProfile } from "@teach-everything/shared";
+import { runtimeProfileSchema, type RuntimeProfile } from "@agent-workbench/shared";
 import developmentProfileDocument from "../../../profiles/runtime-development.json";
 import publishedProfileDocument from "../../../profiles/runtime-published.json";
 

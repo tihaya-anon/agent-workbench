@@ -1,16 +1,16 @@
-import { AgentRunExecutionError, type AgentRunExecutor } from "@teach-everything/agent";
+import { AgentRunExecutionError, type AgentRunExecutor } from "@agent-workbench/agent";
 import type {
   AgentRunAcceptedTelemetry,
   AgentRunTelemetryScope,
   AgentRunTerminalOutcome,
-} from "@teach-everything/observability";
+} from "@agent-workbench/observability";
 import {
   agentRunRequestSchema,
   runtimeProfileSchema,
   type AgentRunEvent,
   type AgentRunExecutorEvent,
   type AgentRunRequest,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 import developmentProfileDocument from "../../../profiles/runtime-development.json";
 import publishedProfileDocument from "../../../profiles/runtime-published.json";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -81,7 +81,7 @@ const asyncIterableFrom = <T>(items: T[]): AsyncIterable<T> => ({
 const agentRunEvents = (...events: AgentRunExecutorEvent[]) => asyncIterableFrom(events);
 
 const completeBehaviorVersion = {
-  graph: "graph:teaching-assistant:v1",
+  graph: "graph:default-agent:v1",
   state: "state:lesson-session:v1",
   action: "action:tutor-response:v1",
   prompt: "prompt:socratic:v3",

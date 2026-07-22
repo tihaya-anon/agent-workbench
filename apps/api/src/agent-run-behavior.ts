@@ -7,8 +7,8 @@ import {
   type StrictAgentBehaviorVersion,
   runtimeProfileSchema,
   validateAgentBehaviorVersionForRuntimeProfile,
-} from "@teach-everything/shared";
-import type { AgentRunAcceptedTelemetry } from "@teach-everything/observability";
+} from "@agent-workbench/shared";
+import type { AgentRunAcceptedTelemetry } from "@agent-workbench/observability";
 
 export type AgentBehaviorVersionAcceptanceConfig = {
   agentBehaviorVersion: unknown;

@@ -4,7 +4,7 @@ import {
   type RunnableInterface,
 } from "@langchain/core/runnables";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
-import { createLangChainTelemetryCallback } from "@teach-everything/observability";
+import { createLangChainTelemetryCallback } from "@agent-workbench/observability";
 import type { PublishableGraphFactory } from "./registration";
 
 /**
@@ -39,7 +39,7 @@ export type AgentStateUpdate = typeof agentState.Update;
 export type AgentNode = typeof agentState.Node;
 
 const telemetryCallback = createLangChainTelemetryCallback({
-  instrumentationName: "@teach-everything/agent",
+  instrumentationName: "@agent-workbench/agent",
 });
 
 const normalizeInput: AgentNode = (state) => {

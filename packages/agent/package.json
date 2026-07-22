@@ -1,5 +1,5 @@
 {
-  "name": "@teach-everything/agent",
+  "name": "@agent-workbench/agent",
   "private": true,
   "type": "module",
   "exports": {
@@ -16,7 +16,7 @@
   "dependencies": {
     "@langchain/core": "^1.2.2",
     "@langchain/langgraph": "^1.4.7",
-    "@teach-everything/observability": "workspace:*",
-    "@teach-everything/shared": "workspace:*"
+    "@agent-workbench/observability": "workspace:*",
+    "@agent-workbench/shared": "workspace:*"
   }
 }

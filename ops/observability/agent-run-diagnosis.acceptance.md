@@ -37,7 +37,7 @@ cd ../prometheus-grafana-loki
 docker compose down -v
 docker compose up -d
 ./scripts/smoke-test.sh
-cd ../teach-everything
+cd ../agent-workbench
 ```
 
 Load the current Agent Run Diagnosis dashboard into Grafana without editing datasource references:
@@ -49,7 +49,7 @@ node -e 'const fs=require("node:fs"); const dashboard=JSON.parse(fs.readFileSync
 ## Controlled Runs
 
 Run the acceptance executor in a container attached to PGL's `observability` network so Alloy
-collects Teach Everything JSON stdout logs and receives OTLP telemetry:
+collects Agent Workbench JSON stdout logs and receives OTLP telemetry:
 
 ```bash
 pnpm observability:agent-run-diagnosis:acceptance
@@ -58,20 +58,20 @@ pnpm observability:agent-run-diagnosis:acceptance
 The package entry runs `ops/observability/acceptance/run-agent-run-diagnosis.sh`, which wraps:
 
 ```bash
-docker run --rm --name teach-everything-agent-run-diagnosis-acceptance \
-  --label com.docker.compose.service=teach-everything-api \
+docker run --rm --name agent-workbench-agent-run-diagnosis-acceptance \
+  --label com.docker.compose.service=agent-workbench-api \
   --network observability \
   -v "$PWD":/workspace \
   -w /workspace \
   -e NODE_ENV=production \
   -e OTEL_SDK_DISABLED=false \
-  -e OTEL_SERVICE_NAME=teach-everything-api \
+  -e OTEL_SERVICE_NAME=agent-workbench-api \
   -e OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318 \
   -e LOG_SINKS=stdout \
   -e LOG_STDOUT_FORMAT=json \
   -e AGENT_RUN_DIAGNOSIS_ACCEPTANCE_PREFIX=ar_current_acceptance \
   node:22.23.1-slim \
-  corepack pnpm observability:agent-run-diagnosis:acceptance:local
+  node --import tsx ops/observability/acceptance/agent-run-diagnosis.ts
 ```
 
 Expected scenarios:
@@ -115,7 +115,7 @@ Current TraceQL checks:
 Current Loki check:
 
 ```logql
-{service_name="teach-everything-api"} | json | __error__="" | traceId != "" | attributes_session_id != "" | attributes_session_id="ar_current_acceptance_01"
+{service_name="agent-workbench-api"} | json | __error__="" | traceId != "" | attributes_session_id != "" | attributes_session_id="ar_current_acceptance_01"
 ```
 
 ## Metric Checks
@@ -137,14 +137,14 @@ Expected metric families:
 Inspect the actual labels before writing follow-up PromQL:
 
 ```bash
-curl -sS "http://127.0.0.1:9090/api/v1/query?query=agent_run_duration_seconds_count%7Bjob%3D%22teach-everything-api%22%7D" | jq .
-curl -sS "http://127.0.0.1:9090/api/v1/query?query=langchain_run_duration_seconds_count%7Bjob%3D%22teach-everything-api%22%7D" | jq .
+curl -sS "http://127.0.0.1:9090/api/v1/query?query=agent_run_duration_seconds_count%7Bjob%3D%22agent-workbench-api%22%7D" | jq .
+curl -sS "http://127.0.0.1:9090/api/v1/query?query=langchain_run_duration_seconds_count%7Bjob%3D%22agent-workbench-api%22%7D" | jq .
 ```
 
 For token usage, use the discovered metric name. A common current shape is:
 
 ```bash
-curl -sS "http://127.0.0.1:9090/api/v1/query?query=gen_ai_client_token_usage_count%7Bjob%3D%22teach-everything-api%22%7D" | jq .
+curl -sS "http://127.0.0.1:9090/api/v1/query?query=gen_ai_client_token_usage_count%7Bjob%3D%22agent-workbench-api%22%7D" | jq .
 ```
 
 Verify these outcomes:
@@ -175,7 +175,7 @@ PGL stack:
 - The loaded dashboard used the current query contract: `session.id`,
   `metadata.agent_run.outcome`, `openinference.span.kind`, and `attributes_session_id`.
 - Grafana API reported the dashboard under the GitHub-sync folder
-  `tihaya-anon/teach-everything`. The API record had `provisioned=false` because this local Grafana
+  `tihaya-anon/agent-workbench`. The API record had `provisioned=false` because this local Grafana
   database had previously been overwritten through the dashboard import endpoint, but the dashboard
   content matched the current generated contract.
 
@@ -200,24 +200,24 @@ Tempo and Loki checks:
 - TraceQL for `ar_current_acceptance_01` found root span `agent.run` with
   `session.id=ar_current_acceptance_01`.
 - Tempo returned trace `423167f9761868eb107e6a488bde0bdb` with four spans for service
-  `teach-everything-api`.
+  `agent-workbench-api`.
 - Loki range query for `ar_current_acceptance_01` returned exactly the two lifecycle records
   `agent.run.accepted` and `agent.run.completed`, both with trace ID
   `423167f9761868eb107e6a488bde0bdb`.
 
 Prometheus metric checks:
 
-- `agent_run_duration_seconds_count{job="teach-everything-api"}` was present with:
+- `agent_run_duration_seconds_count{job="agent-workbench-api"}` was present with:
   - `metadata_agent_run_outcome="succeeded"` count `2`
   - `metadata_agent_run_outcome="cancelled"` count `1`
   - `metadata_agent_run_outcome="failed", error_type="tool"` count `1`
   - `metadata_agent_run_outcome="failed", error_type="cancellation_failed"` count `1`
-- `langchain_run_duration_seconds_count{job="teach-everything-api"}` was present for:
+- `langchain_run_duration_seconds_count{job="agent-workbench-api"}` was present for:
   - `openinference_span_kind="LLM"` with provider/model and operation labels
   - `openinference_span_kind="TOOL"` for `AcceptanceLookupTool`, `AcceptanceSlowTool`, and
     `AcceptanceFailingTool`
   - `openinference_span_kind="CHAIN"` with `metadata_langchain_run_status` values `ok` and `error`
-- `gen_ai_client_token_usage_count{job="teach-everything-api"}` was present with:
+- `gen_ai_client_token_usage_count{job="agent-workbench-api"}` was present with:
   - `llm_provider="acceptance-provider"`
   - `llm_model_name="acceptance-model-response"`
   - `metadata_llm_token_type="input"` count `1`

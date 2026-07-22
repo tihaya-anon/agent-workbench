@@ -68,7 +68,7 @@ Profile policy:
 For the sibling layout above, run the API from `agent-workbench` with:
 
 ```bash
-AGENT_RUN_PYTHON_WORKER_REPO_PATH=../agent-runtime-python pnpm --filter @teach-everything/api dev
+AGENT_RUN_PYTHON_WORKER_REPO_PATH=../agent-runtime-python pnpm --filter @agent-workbench/api dev
 ```
 
 The API validates the selected path and command at startup. When #19 adds the subprocess adapter,

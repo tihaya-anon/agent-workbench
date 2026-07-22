@@ -183,7 +183,7 @@ const createTelemetryTestHarness = () => {
 
 const completeAcceptedTelemetry = {
   agentBehaviorVersion: {
-    graph: "graph:teaching-assistant:v1",
+    graph: "graph:default-agent:v1",
     state: "state:lesson-session:v1",
     action: "action:tutor-response:v1",
     prompt: "prompt:socratic:v3",
@@ -200,7 +200,7 @@ const completeAcceptedTelemetry = {
 const completeAcceptedTelemetryAttributes = {
   [AGENT_RUN_COMPARABLE_ATTRIBUTE]: true,
   [AGENT_RUN_PROMOTABLE_ATTRIBUTE]: true,
-  [AGENT_BEHAVIOR_GRAPH_ATTRIBUTE]: "graph:teaching-assistant:v1",
+  [AGENT_BEHAVIOR_GRAPH_ATTRIBUTE]: "graph:default-agent:v1",
   [AGENT_BEHAVIOR_STATE_ATTRIBUTE]: "state:lesson-session:v1",
   [AGENT_BEHAVIOR_ACTION_ATTRIBUTE]: "action:tutor-response:v1",
   [AGENT_BEHAVIOR_PROMPT_ATTRIBUTE]: "prompt:socratic:v3",

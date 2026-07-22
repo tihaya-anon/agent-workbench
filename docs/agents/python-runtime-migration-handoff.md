@@ -59,14 +59,14 @@ Python runtime repository:
 For #19:
 
 - `pnpm exec vitest run packages/agent/src/agent-run-executor.test.ts apps/api/src/python-worker-agent-run-executor.test.ts apps/api/src/agent-run-lifecycle.test.ts apps/api/src/python-worker-discovery.test.ts apps/api/src/routes/agent-runs.test.ts`
-- `pnpm --filter @teach-everything/api typecheck`
-- `pnpm --filter @teach-everything/agent typecheck`
+- `pnpm --filter @agent-workbench/api typecheck`
+- `pnpm --filter @agent-workbench/agent typecheck`
 
 For #20:
 
 - `pnpm exec vitest run apps/api/src/routes/agent-runs.test.ts apps/api/src/python-worker-agent-run-executor.test.ts apps/web/src/lib/agent-run-stream-consumer.test.ts`
-- `pnpm --filter @teach-everything/api typecheck`
-- `pnpm --filter @teach-everything/web typecheck`
+- `pnpm --filter @agent-workbench/api typecheck`
+- `pnpm --filter @agent-workbench/web typecheck`
 
 For the Python worker:
 
@@ -81,8 +81,8 @@ For #21:
 For #22:
 
 - `pnpm exec vitest run packages/agent/src/agent-run-executor.test.ts packages/agent/src/archive/graph-factory-runtime/registration.test.ts packages/agent/src/archive/graph-factory-runtime/cli.test.ts apps/api/src/app.test.ts apps/api/src/python-worker-agent-run-executor.test.ts apps/api/src/routes/agent-runs.test.ts`
-- `pnpm --filter @teach-everything/agent typecheck`
-- `pnpm --filter @teach-everything/api typecheck`
+- `pnpm --filter @agent-workbench/agent typecheck`
+- `pnpm --filter @agent-workbench/api typecheck`
 
 ## Deprecated TS Runtime Inventory
 
@@ -98,9 +98,9 @@ deprecated:
 - `packages/shared/src/archive/graph-factory-runtime.ts`: archived Graph Factory runtime request
   schema.
 
-These helpers are no longer exported from the active `@teach-everything/agent` or
-`@teach-everything/shared` package roots. The shared request schema remains available only through
-the explicit `@teach-everything/shared/archive/graph-factory-runtime` compatibility subpath.
+These helpers are no longer exported from the active `@agent-workbench/agent` or
+`@agent-workbench/shared` package roots. The shared request schema remains available only through
+the explicit `@agent-workbench/shared/archive/graph-factory-runtime` compatibility subpath.
 
 The tests that protect this archived compatibility surface are:
 

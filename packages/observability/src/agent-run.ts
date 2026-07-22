@@ -19,10 +19,10 @@ import type {
   AgentRunOutcome,
   DevelopmentAgentBehaviorVersion,
   StrictAgentBehaviorVersion,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 import type { LogAttributes, Logger } from "./logger";
 
-export type { AgentRunErrorClassification, AgentRunOutcome } from "@teach-everything/shared";
+export type { AgentRunErrorClassification, AgentRunOutcome } from "@agent-workbench/shared";
 
 export type AgentRunTerminalOutcome =
   | {
@@ -57,7 +57,7 @@ export interface AgentRunTelemetryScope {
   finish(terminalOutcome: AgentRunTerminalOutcome): void;
 }
 
-const DEFAULT_INSTRUMENTATION_NAME = "@teach-everything/observability/agent-run";
+const DEFAULT_INSTRUMENTATION_NAME = "@agent-workbench/observability/agent-run";
 
 const AGENT_RUN_OUTCOME_ATTRIBUTE = `${SemanticConventions.METADATA}.agent_run.outcome` as const;
 const AGENT_RUN_COMPARABLE_ATTRIBUTE =

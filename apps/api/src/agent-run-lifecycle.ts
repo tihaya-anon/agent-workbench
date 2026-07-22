@@ -1,9 +1,9 @@
-import { AgentRunExecutionError, type AgentRunExecutor } from "@teach-everything/agent";
+import { AgentRunExecutionError, type AgentRunExecutor } from "@agent-workbench/agent";
 import {
   type AgentRunErrorClassification,
   type AgentRunTelemetryScope,
   type AgentRunTerminalOutcome,
-} from "@teach-everything/observability";
+} from "@agent-workbench/observability";
 import {
   agentRunErrorClassificationSchema,
   agentRunExecutorEventSchema,
@@ -11,7 +11,7 @@ import {
   type AgentRunEvent,
   type AgentRunExecutorEvent,
   type AgentRunRequest,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 import {
   resolveAgentBehaviorVersionAcceptance,
   type AgentBehaviorVersionAcceptanceInput,

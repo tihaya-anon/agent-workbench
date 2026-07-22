@@ -2,7 +2,7 @@ import {
   agentRunEventLineSchema,
   type AgentRunErrorClassification,
   type AgentRunEvent,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 
 export type ConsumeAgentRunStreamOptions = {
   agentRunId: string;

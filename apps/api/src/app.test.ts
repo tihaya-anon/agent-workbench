@@ -1,4 +1,4 @@
-import { healthResponseSchema } from "@teach-everything/shared";
+import { healthResponseSchema } from "@agent-workbench/shared";
 import { describe, expect, it } from "vitest";
 import { app, createApp } from "./app";
 

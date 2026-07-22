@@ -4,6 +4,6 @@ export default defineConfig({
   clean: true,
   entry: ["src/index.ts", "src/instrumentation.ts"],
   format: ["esm"],
-  noExternal: ["@teach-everything/observability", "@teach-everything/shared"],
+  noExternal: ["@agent-workbench/observability", "@agent-workbench/shared"],
   sourcemap: true,
 });

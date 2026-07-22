@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MessageSquarePlus, Moon, Sparkles, Sun } from "lucide-react";
-import type { HealthResponse } from "@teach-everything/shared";
+import type { HealthResponse } from "@agent-workbench/shared";
 import { AssistantRuntimeProvider, useAui } from "@assistant-ui/react";
 import { Thread } from "@/components/assistant-ui/thread";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";

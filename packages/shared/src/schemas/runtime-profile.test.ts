@@ -14,7 +14,7 @@ const defaultProfileDocuments = {
 } as const;
 
 const completeBehaviorVersion = {
-  graph: "graph:teaching-assistant:v1",
+  graph: "graph:default-agent:v1",
   state: "state:lesson-session:v1",
   action: "action:tutor-response:v1",
   prompt: "prompt:socratic:v3",

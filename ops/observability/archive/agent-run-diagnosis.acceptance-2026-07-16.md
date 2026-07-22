@@ -26,17 +26,17 @@ node -e 'const fs=require("node:fs"); const dashboard=JSON.parse(fs.readFileSync
 ## Controlled Runs
 
 Run the acceptance executor in a container attached to PGL's `observability` network so Alloy
-collects the Teach Everything API JSON stdout logs and the API exports OTLP telemetry to Alloy:
+collects the Agent Workbench API JSON stdout logs and the API exports OTLP telemetry to Alloy:
 
 ```bash
-docker run --rm --name teach-everything-agent-run-diagnosis-acceptance \
-  --label com.docker.compose.service=teach-everything-api \
+docker run --rm --name agent-workbench-agent-run-diagnosis-acceptance \
+  --label com.docker.compose.service=agent-workbench-api \
   --network observability \
   -v "$PWD":/workspace \
   -w /workspace \
   -e NODE_ENV=production \
   -e OTEL_SDK_DISABLED=false \
-  -e OTEL_SERVICE_NAME=teach-everything-api \
+  -e OTEL_SERVICE_NAME=agent-workbench-api \
   -e OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318 \
   -e LOG_SINKS=stdout \
   -e LOG_STDOUT_FORMAT=json \
@@ -99,7 +99,7 @@ Grafana diagnosis checks:
 - Cancellation-failure TraceQL found `ar_acceptance_labeled_05` with
   `agent.run.outcome=failed` and `error.type=cancellation_failed`.
 - Loki query
-  `{service_name="teach-everything-api"} | json | __error__="" | traceId != "" | attributes_agent_run_id != "" | attributes_agent_run_id="ar_acceptance_labeled_01"`
+  `{service_name="agent-workbench-api"} | json | __error__="" | traceId != "" | attributes_agent_run_id != "" | attributes_agent_run_id="ar_acceptance_labeled_01"`
   returned only the two lifecycle records for that Agent Run, each with trace ID
   `3003a914d0e90ae7932540e7178916a8`.
 - Grafana's Loki datasource has the PGL-provisioned `TraceID` derived field pointing at datasource
@@ -108,10 +108,10 @@ Grafana diagnosis checks:
 
 Prometheus metric checks:
 
-- `agent_run_duration_seconds_count{job="teach-everything-api"}` was present for outcomes
+- `agent_run_duration_seconds_count{job="agent-workbench-api"}` was present for outcomes
   `succeeded`, `cancelled`, `failed/error_type=tool`, and
   `failed/error_type=cancellation_failed`.
-- `gen_ai_client_token_usage_count{job="teach-everything-api"}` was present for input and output
+- `gen_ai_client_token_usage_count{job="agent-workbench-api"}` was present for input and output
   token types with provider/model metadata.
 - `GET /api/v1/label/agent_run_id/values` returned an empty list, confirming no per-run metric
   label was exported.

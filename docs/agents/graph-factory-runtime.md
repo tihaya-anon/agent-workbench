@@ -60,7 +60,7 @@ The archived runtime defined factories in a TypeScript module owned by the runti
 package. A factory was a small object with an identity, version, and `createGraph` function.
 
 Archived helpers now live under `packages/agent/src/archive/graph-factory-runtime` and are not
-exported from the active `@teach-everything/agent` package root.
+exported from the active `@agent-workbench/agent` package root.
 
 ```ts
 import { readGraphFactoryRuntimeRequestFromStdin } from "./archive/graph-factory-runtime/cli";

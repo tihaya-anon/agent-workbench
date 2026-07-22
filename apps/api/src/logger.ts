@@ -1,10 +1,10 @@
 import {
   createLoggerFromEnv,
   type EnvironmentLoggerOptions,
-} from "@teach-everything/observability";
+} from "@agent-workbench/observability";
 
 const LOGGER_OPTIONS: EnvironmentLoggerOptions = {
-  defaultServiceName: "teach-everything-api",
+  defaultServiceName: "agent-workbench-api",
   ...(process.env.npm_package_version === undefined
     ? {}
     : { serviceVersion: process.env.npm_package_version }),

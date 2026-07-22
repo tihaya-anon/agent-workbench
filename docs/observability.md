@@ -1,6 +1,6 @@
 # Observability Contract
 
-All Node.js runtimes use `@teach-everything/observability`. Business modules should use its
+All Node.js runtimes use `@agent-workbench/observability`. Business modules should use its
 `Logger` interface and framework-native instrumentation callbacks instead of calling `console`,
 managing span lifecycles, or configuring exporters.
 
@@ -16,7 +16,7 @@ JSON logs follow the OpenTelemetry log data model vocabulary:
   "severityText": "INFO",
   "body": "Agent invocation completed",
   "resource": {
-    "service.name": "teach-everything-api",
+    "service.name": "agent-workbench-api",
     "service.version": "0.1.0",
     "deployment.environment.name": "production"
   },

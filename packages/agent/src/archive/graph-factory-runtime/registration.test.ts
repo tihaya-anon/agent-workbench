@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runtimeProfileSchema } from "@teach-everything/shared";
+import { runtimeProfileSchema } from "@agent-workbench/shared";
 import { describe, expect, it } from "vitest";
 import developmentProfileDocument from "../../../../../profiles/runtime-development.json";
 import publishedProfileDocument from "../../../../../profiles/runtime-published.json";
@@ -82,7 +82,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
   it("registers a publishable Graph Factory version from complete behavior inputs and clean source", () => {
     // Given
     const repositoryPath = createTemporaryGitRepository();
-    const graphFactory = createGraphFactory("graph-factory:teaching-assistant", "v1");
+    const graphFactory = createGraphFactory("graph-factory:default-agent", "v1");
     const expectedCommitSha = getCurrentCommitSha(repositoryPath);
 
     // When
@@ -95,10 +95,10 @@ describe("registerPublishableGraphFactoryVersion", () => {
     // Then
     expect(result).toEqual({
       graphFactory,
-      graphFactoryIdentity: "graph-factory:teaching-assistant",
+      graphFactoryIdentity: "graph-factory:default-agent",
       graphFactoryVersion: "v1",
       behaviorVersion: {
-        graph: 'graph-factory-version:["graph-factory:teaching-assistant","v1"]',
+        graph: 'graph-factory-version:["graph-factory:default-agent","v1"]',
         ...baselineBehaviorInputs,
         sourceRevision: expectedCommitSha,
       },
@@ -112,7 +112,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
   it("rejects a dirty worktree at the registration boundary", () => {
     // Given
     const repositoryPath = createTemporaryGitRepository();
-    const graphFactory = createGraphFactory("graph-factory:teaching-assistant", "v1");
+    const graphFactory = createGraphFactory("graph-factory:default-agent", "v1");
     writeFileSync(join(repositoryPath, "tracked.txt"), "modified\n");
 
     // When
@@ -132,7 +132,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
   it("allows dirty source when the Runtime Profile does not require clean published registration", () => {
     // Given
     const repositoryPath = createTemporaryGitRepository();
-    const graphFactory = createGraphFactory("graph-factory:teaching-assistant", "v1");
+    const graphFactory = createGraphFactory("graph-factory:default-agent", "v1");
     const expectedCommitSha = getCurrentCommitSha(repositoryPath);
     writeFileSync(join(repositoryPath, "tracked.txt"), "modified\n");
 
@@ -154,7 +154,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
   it("rejects incomplete behavior-version inputs", () => {
     // Given
     const repositoryPath = createTemporaryGitRepository();
-    const graphFactory = createGraphFactory("graph-factory:teaching-assistant", "v1");
+    const graphFactory = createGraphFactory("graph-factory:default-agent", "v1");
     const incompleteBehaviorInputs = {
       state: baselineBehaviorInputs.state,
       action: baselineBehaviorInputs.action,
@@ -210,7 +210,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
   it("allows one Graph Factory identity to support many trial parameter versions", () => {
     // Given
     const repositoryPath = createTemporaryGitRepository();
-    const graphFactory = createGraphFactory("graph-factory:teaching-assistant", "v1");
+    const graphFactory = createGraphFactory("graph-factory:default-agent", "v1");
 
     // When
     const baselineRegistration = registerInRepository(repositoryPath, {
@@ -232,11 +232,11 @@ describe("registerPublishableGraphFactoryVersion", () => {
 
     // Then
     expect(baselineRegistration.behaviorVersion).toMatchObject({
-      graph: 'graph-factory-version:["graph-factory:teaching-assistant","v1"]',
+      graph: 'graph-factory-version:["graph-factory:default-agent","v1"]',
       trialParameter: "trial-parameter:baseline:v1",
     });
     expect(variantRegistration.behaviorVersion).toMatchObject({
-      graph: 'graph-factory-version:["graph-factory:teaching-assistant","v1"]',
+      graph: 'graph-factory-version:["graph-factory:default-agent","v1"]',
       trialParameter: "trial-parameter:variant:v2",
     });
   });
@@ -244,21 +244,21 @@ describe("registerPublishableGraphFactoryVersion", () => {
   it("selects many versions of one stable Graph Factory identity", () => {
     // Given
     const catalog = createPublishableGraphFactoryCatalog([
-      createGraphFactory("graph-factory:teaching-assistant", "v1"),
-      createGraphFactory("graph-factory:teaching-assistant", "v2"),
+      createGraphFactory("graph-factory:default-agent", "v1"),
+      createGraphFactory("graph-factory:default-agent", "v2"),
     ]);
 
     // When
-    const firstVersion = catalog.selectGraphFactory("graph-factory:teaching-assistant", "v1");
-    const secondVersion = catalog.selectGraphFactory("graph-factory:teaching-assistant", "v2");
+    const firstVersion = catalog.selectGraphFactory("graph-factory:default-agent", "v1");
+    const secondVersion = catalog.selectGraphFactory("graph-factory:default-agent", "v2");
 
     // Then
     expect(firstVersion).toMatchObject({
-      identity: "graph-factory:teaching-assistant",
+      identity: "graph-factory:default-agent",
       version: "v1",
     });
     expect(secondVersion).toMatchObject({
-      identity: "graph-factory:teaching-assistant",
+      identity: "graph-factory:default-agent",
       version: "v2",
     });
   });
@@ -281,7 +281,7 @@ describe("registerPublishableGraphFactoryVersion", () => {
   it("captures a clean Git Source Revision as a checkout locator", () => {
     // Given
     const repositoryPath = createTemporaryGitRepository();
-    const graphFactory = createGraphFactory("graph-factory:teaching-assistant", "v1");
+    const graphFactory = createGraphFactory("graph-factory:default-agent", "v1");
     const expectedCommitSha = getCurrentCommitSha(repositoryPath);
 
     // When

@@ -315,7 +315,7 @@ const gridItem = (name: string, gridPos: GridPosition): GridLayoutItemKind => ({
 const agentRunDiagnosisDashboardV2 = (): DashboardV2 => ({
   annotations: [],
   cursorSync: DashboardCursorSync.Off,
-  description: "Diagnose one Teach Everything Agent Run from its opaque Agent Run Identifier.",
+  description: "Diagnose one Agent Workbench Agent Run from its opaque Agent Run Identifier.",
   editable: true,
   elements: {
     selectedRunSummary: panel({

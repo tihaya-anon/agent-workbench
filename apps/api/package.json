@@ -1,5 +1,5 @@
 {
-  "name": "@teach-everything/api",
+  "name": "@agent-workbench/api",
   "private": true,
   "type": "module",
   "exports": {
@@ -23,9 +23,9 @@
     "@opentelemetry/exporter-trace-otlp-proto": "^0.220.0",
     "@opentelemetry/sdk-metrics": "^2.9.0",
     "@opentelemetry/sdk-node": "^0.220.0",
-    "@teach-everything/agent": "workspace:*",
-    "@teach-everything/observability": "workspace:*",
-    "@teach-everything/shared": "workspace:*",
+    "@agent-workbench/agent": "workspace:*",
+    "@agent-workbench/observability": "workspace:*",
+    "@agent-workbench/shared": "workspace:*",
     "hono": "^4.12.29"
   },
   "devDependencies": {

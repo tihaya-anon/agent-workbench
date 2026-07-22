@@ -1,15 +1,15 @@
-import type { AgentRunExecutor } from "@teach-everything/agent";
+import type { AgentRunExecutor } from "@agent-workbench/agent";
 import {
   agentRunEventLineSchema,
   runtimeProfileSchema,
   type AgentRunExecutorEvent,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 import { serve } from "@hono/node-server";
 import type {
   AgentRunAcceptedTelemetry,
   AgentRunTelemetryScope,
   AgentRunTerminalOutcome,
-} from "@teach-everything/observability";
+} from "@agent-workbench/observability";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

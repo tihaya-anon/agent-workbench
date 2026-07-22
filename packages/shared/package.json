@@ -1,5 +1,5 @@
 {
-  "name": "@teach-everything/shared",
+  "name": "@agent-workbench/shared",
   "private": true,
   "type": "module",
   "exports": {

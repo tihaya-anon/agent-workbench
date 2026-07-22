@@ -2,7 +2,7 @@ import {
   agentRunRequestSchema,
   runtimeProfileSchema,
   type AgentRunExecutorEvent,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 import { describe, expect, it } from "vitest";
 import developmentProfileDocument from "../../../profiles/runtime-development.json";
 import type { AgentRunExecutor, AgentRunExecutorContext } from "./index";

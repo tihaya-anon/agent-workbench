@@ -1,13 +1,13 @@
-import type { AgentRunExecutor } from "@teach-everything/agent";
+import type { AgentRunExecutor } from "@agent-workbench/agent";
 import {
   type AgentRunTelemetry,
   type AgentRunTelemetryScope,
-} from "@teach-everything/observability";
+} from "@agent-workbench/observability";
 import {
   agentRunRequestSchema,
   encodeAgentRunEventLine,
   type AgentRunRequest,
-} from "@teach-everything/shared";
+} from "@agent-workbench/shared";
 import type { Context } from "hono";
 import type { HonoBase } from "hono/hono-base";
 import { validator } from "hono/validator";

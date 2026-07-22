@@ -1,6 +1,6 @@
-import type { AgentRunExecutorContext } from "@teach-everything/agent";
-import type { AgentRunExecutorEvent } from "@teach-everything/shared";
-import { runtimeProfileSchema } from "@teach-everything/shared";
+import type { AgentRunExecutorContext } from "@agent-workbench/agent";
+import type { AgentRunExecutorEvent } from "@agent-workbench/shared";
+import { runtimeProfileSchema } from "@agent-workbench/shared";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

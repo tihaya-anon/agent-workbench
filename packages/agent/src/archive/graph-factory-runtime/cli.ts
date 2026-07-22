@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   graphFactoryRuntimeRequestSchema,
   type GraphFactoryRuntimeRequest,
-} from "@teach-everything/shared/archive/graph-factory-runtime";
+} from "@agent-workbench/shared/archive/graph-factory-runtime";
 
 /**
  * @deprecated Python owns experiment execution. Keep only for archived TS graph-factory

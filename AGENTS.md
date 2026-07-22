@@ -38,7 +38,7 @@ pnpm clean         # Remove generated workspace outputs
 
 The default frontend URL is `http://localhost:5173`; the API defaults to port `3000`. If that port is occupied, run `API_PORT=3001 PORT=3001 pnpm dev`.
 
-Database commands are scoped to `@teach-everything/database`, for example `pnpm --filter @teach-everything/database db:generate`. Set `DATABASE_URL` first; use `.env.example` as a reference and never commit credentials.
+Database commands are scoped to `@agent-workbench/database`, for example `pnpm --filter @agent-workbench/database db:generate`. Set `DATABASE_URL` first; use `.env.example` as a reference and never commit credentials.
 
 ## Coding Style & Naming Conventions
 

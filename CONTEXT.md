@@ -1,6 +1,6 @@
-# Teach Everything
+# Agent Workbench
 
-Teach Everything is an agent engineering environment for improving agent behavior through observable, repeatable experiments, validated through learning experiences.
+Agent Workbench is an agent engineering environment for improving agent behavior through observable, repeatable experiments, validated through learning experiences.
 
 ## Language
 
