@@ -52,6 +52,12 @@ Run the acceptance executor in a container attached to PGL's `observability` net
 collects Teach Everything JSON stdout logs and receives OTLP telemetry:
 
 ```bash
+pnpm observability:agent-run-diagnosis:acceptance
+```
+
+The package entry runs `ops/observability/acceptance/run-agent-run-diagnosis.sh`, which wraps:
+
+```bash
 docker run --rm --name teach-everything-agent-run-diagnosis-acceptance \
   --label com.docker.compose.service=teach-everything-api \
   --network observability \
@@ -65,7 +71,7 @@ docker run --rm --name teach-everything-agent-run-diagnosis-acceptance \
   -e LOG_STDOUT_FORMAT=json \
   -e AGENT_RUN_DIAGNOSIS_ACCEPTANCE_PREFIX=ar_current_acceptance \
   node:22.23.1-slim \
-  node --import tsx ops/observability/acceptance/agent-run-diagnosis.ts
+  corepack pnpm observability:agent-run-diagnosis:acceptance:local
 ```
 
 Expected scenarios:
